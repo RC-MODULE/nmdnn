@@ -33,6 +33,7 @@
 								<option id="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.exceptions.1052158006" superClass="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.exceptions"/>
 								<option command="-std=c++11" id="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.mode.base.1428523806" superClass="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.mode.base"/>
 								<option id="ru.mipt.designcenter.compiler.base.cpp.debugging.level.1178174575" superClass="ru.mipt.designcenter.compiler.base.cpp.debugging.level"/>
+								<inputType id="ru.mipt.designcenter.compiler.cpp.input.1546430954" superClass="ru.mipt.designcenter.compiler.cpp.input"/>
 							</tool>
 							<tool id="ru.mipt.designcenter.assembler.c.2138240267" name="NMC Assembler" superClass="ru.mipt.designcenter.assembler.c">
 								<option id="ru.mipt.designcenter.assembler.base.c.general.targetcpu.111492566" superClass="ru.mipt.designcenter.assembler.base.c.general.targetcpu"/>
@@ -51,12 +52,14 @@
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.verbose.1321094896" superClass="ru.mipt.designcenter.assembler.base.cpp.general.verbose"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.compile.1290052769" superClass="ru.mipt.designcenter.assembler.base.cpp.general.compile"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.debugging.level.1633279562" superClass="ru.mipt.designcenter.assembler.base.cpp.debugging.level"/>
+								<inputType id="ru.mipt.designcenter.assembler.cpp.input.1267825769" superClass="ru.mipt.designcenter.assembler.cpp.input"/>
 							</tool>
 							<tool id="ru.mipt.designcenter.assembler.cpp.legacy.1502764405" name="NMC Legacy Assembler" superClass="ru.mipt.designcenter.assembler.cpp.legacy">
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.targetcpu.534943287" superClass="ru.mipt.designcenter.assembler.base.cpp.general.targetcpu"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.verbose.361022145" superClass="ru.mipt.designcenter.assembler.base.cpp.general.verbose"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.compile.114203246" superClass="ru.mipt.designcenter.assembler.base.cpp.general.compile"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.debugging.level.1521449985" superClass="ru.mipt.designcenter.assembler.base.cpp.debugging.level"/>
+								<inputType id="ru.mipt.designcenter.assembler.cpp.legacy.input.1184579717" superClass="ru.mipt.designcenter.assembler.cpp.legacy.input"/>
 							</tool>
 							<tool id="ru.mipt.designcenter.linker.c.348808137" name="NMC Linker" superClass="ru.mipt.designcenter.linker.c">
 								<option id="ru.mipt.designcenter.linker.base.c.general.targetcpu.1845987245" superClass="ru.mipt.designcenter.linker.base.c.general.targetcpu"/>
@@ -67,6 +70,10 @@
 								<option id="ru.mipt.designcenter.linker.base.cpp.general.targetcpu.1616670540" superClass="ru.mipt.designcenter.linker.base.cpp.general.targetcpu"/>
 								<option id="ru.mipt.designcenter.linker.base.cpp.general.verbose.20436967" superClass="ru.mipt.designcenter.linker.base.cpp.general.verbose"/>
 								<option id="ru.mipt.designcenter.linker.base.cpp.sourcelanguage.exceptions.751184324" superClass="ru.mipt.designcenter.linker.base.cpp.sourcelanguage.exceptions"/>
+								<inputType id="ru.mipt.designcenter.linker.base.cpp.input.331372586" superClass="ru.mipt.designcenter.linker.base.cpp.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
 							</tool>
 							<tool id="ru.mipt.designcenter.archiver.1090247" name="NMC Archiver" superClass="ru.mipt.designcenter.archiver"/>
 						</toolChain>
@@ -154,6 +161,7 @@
 					</folderInfo>
 				</configuration>
 			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="ru.mipt.designcenter.configuration.exe.windows.debugboard.1352098246">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ru.mipt.designcenter.configuration.exe.windows.debugboard.1352098246" moduleId="org.eclipse.cdt.core.settings" name="Debug_Board">
@@ -187,6 +195,7 @@
 								<option id="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.exceptions.1664968809" superClass="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.exceptions"/>
 								<option command="-std=c++11" id="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.mode.base.821423513" superClass="ru.mipt.designcenter.compiler.base.cpp.sourcelanguage.mode.base"/>
 								<option id="ru.mipt.designcenter.compiler.base.cpp.debugging.level.1485928242" superClass="ru.mipt.designcenter.compiler.base.cpp.debugging.level"/>
+								<inputType id="ru.mipt.designcenter.compiler.cpp.input.666545275" superClass="ru.mipt.designcenter.compiler.cpp.input"/>
 							</tool>
 							<tool id="ru.mipt.designcenter.assembler.c.529112815" name="NMC Assembler" superClass="ru.mipt.designcenter.assembler.c">
 								<option id="ru.mipt.designcenter.assembler.base.c.general.targetcpu.1515923439" superClass="ru.mipt.designcenter.assembler.base.c.general.targetcpu"/>
@@ -205,12 +214,14 @@
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.verbose.64298849" superClass="ru.mipt.designcenter.assembler.base.cpp.general.verbose"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.compile.512949729" superClass="ru.mipt.designcenter.assembler.base.cpp.general.compile"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.debugging.level.405456660" superClass="ru.mipt.designcenter.assembler.base.cpp.debugging.level"/>
+								<inputType id="ru.mipt.designcenter.assembler.cpp.input.1898909106" superClass="ru.mipt.designcenter.assembler.cpp.input"/>
 							</tool>
 							<tool id="ru.mipt.designcenter.assembler.cpp.legacy.1812241537" name="NMC Legacy Assembler" superClass="ru.mipt.designcenter.assembler.cpp.legacy">
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.targetcpu.1655419861" superClass="ru.mipt.designcenter.assembler.base.cpp.general.targetcpu"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.verbose.2012763466" superClass="ru.mipt.designcenter.assembler.base.cpp.general.verbose"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.general.compile.774296118" superClass="ru.mipt.designcenter.assembler.base.cpp.general.compile"/>
 								<option id="ru.mipt.designcenter.assembler.base.cpp.debugging.level.149969985" superClass="ru.mipt.designcenter.assembler.base.cpp.debugging.level"/>
+								<inputType id="ru.mipt.designcenter.assembler.cpp.legacy.input.1567362025" superClass="ru.mipt.designcenter.assembler.cpp.legacy.input"/>
 							</tool>
 							<tool id="exe.windows.debugboard.linker.c.2116275771" name="NMC Linker" superClass="exe.windows.debugboard.linker.c">
 								<option id="ru.mipt.designcenter.linker.base.c.general.targetcpu.844392909" superClass="ru.mipt.designcenter.linker.base.c.general.targetcpu"/>
@@ -225,12 +236,17 @@
 								<option id="ru.mipt.designcenter.linker.base.cpp.sourcelanguage.exceptions.499341953" superClass="ru.mipt.designcenter.linker.base.cpp.sourcelanguage.exceptions"/>
 								<option command="-L &quot;${NM_PATH}nmc\lib\nmc4-float&quot; -L &quot;${NM_PATH}lib\gcc\nmc\4.8.3\nmc4-float&quot; -lc" id="exe.windows.debugboard.linker.cpp.nmcX.libs.155725005" superClass="exe.windows.debugboard.linker.cpp.nmcX.libs"/>
 								<option defaultValue="${NM_PATH}lib\nmc4_float.lds" id="exe.windows.debugboard.linker.cpp.nmcX.debugboard.libs.optionstring.125953519" superClass="exe.windows.debugboard.linker.cpp.nmcX.debugboard.libs.optionstring" valueType="string"/>
+								<inputType id="ru.mipt.designcenter.linker.base.cpp.input.1677558017" superClass="ru.mipt.designcenter.linker.base.cpp.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
 							</tool>
 							<tool id="ru.mipt.designcenter.archiver.126884394" name="NMC Archiver" superClass="ru.mipt.designcenter.archiver"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>
 			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="ru.mipt.designcenter.configuration.exe.windows.releaseboard.1245341221">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="ru.mipt.designcenter.configuration.exe.windows.releaseboard.1245341221" moduleId="org.eclipse.cdt.core.settings" name="Release_Board">
@@ -315,6 +331,7 @@
 					</folderInfo>
 				</configuration>
 			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -342,4 +359,5 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>

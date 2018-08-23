@@ -160,8 +160,8 @@ int main()
         for ( y=0; y<Cy; y++ ){
             for ( z=0; z<Z; z++ ){
             	if ( C[y][x][z] != C2[y][x][z] ){
-            		float xxx1 = C [y][x][z];
-            		float xxx2 = C2[y][x][z];
+//            		float xxx1 = C [y][x][z];
+//            		float xxx2 = C2[y][x][z];
             		return -y*0x10000-x-4;
             	}
             }
