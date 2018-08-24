@@ -9,8 +9,8 @@ const int Cy = 4;
 const int Str_x = 2;
 const int Str_y = 2;
 
-const int W_x = 2;
-const int W_y = 2;
+const int W_x = 3;
+const int W_y = W_x;
 
 float A[Ay][Ax];
 float C[Cy][Cx];
@@ -44,8 +44,12 @@ int main()
 
 	int t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
-    for ( yy=0; yy<Cy; yy++ )
-    	max_pool_2_2( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
+    for ( yy=0; yy<Cy; yy++ ){
+    	if ( W_x==2 )
+    		max_pool_2_2( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
+    	else if ( W_x==3 )
+    		max_pool_3_2( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
+    }
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
     for ( x=0; x<Cx*Str_x; x+=Str_x ){
