@@ -23,8 +23,8 @@ const int Cy = (Ay-1)/2;
 const int Str_x = 2;		//	Параметр:  Страйды
 const int Str_y = 2;
 
-const int W_x = 3;			//	Параметры:  Окно пулинга x,y
-const int W_y = 3;
+const int W_x = 2;			//	Параметры:  Окно пулинга x,y
+const int W_y = W_x;
 
 
 __attribute__ ((section(".data_imu1"))) long long AAA[Ay][Ax][ZZ];
@@ -57,9 +57,10 @@ long long guard3[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 
 //	super reference
 //	two dimensional
-void __max_pool_2d_a3_s2_byZ(
+void __max_pool_2d_s2_byZ(
 		long long C[Cy][Cx][ZZ], 	//	dst
-		long long A[Ay][Ax][ZZ]) 	//	src
+		long long A[Ay][Ax][ZZ],  	//	src
+		int W_x, int W_y) 			//	window size
 {
     int x,y,z;
     for ( x=0; x<Cx; x++ ){
@@ -68,8 +69,8 @@ void __max_pool_2d_a3_s2_byZ(
 //				int cInd = y*Z*Cx     + x*Z + z;
     			nmppsPut< BITS > ( ( NMVec<BITS> )&(C[y][x][0]), z,  0 );
             	int n,m;
-            	for ( n=0; n<3; n++ ){
-                	for ( m=0; m<3; m++ ){
+            	for ( n=0; n<W_y; n++ ){
+                	for ( m=0; m<W_x; m++ ){
         				int aVal;
         				int bVal;
         				aVal = nmppsGet< BITS > ( ( NMVec<BITS> )&(C[y][x][0]), z);
@@ -122,11 +123,11 @@ int maxpool_test()
 	int t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
-	nmppDnn_MaxPool_Fixp<BITS,3,2> ( (NMVecPad<BITS>) AAA, (NMVecPad<BITS>) CCC, Z, Ax, Ay );
+	nmppDnn_MaxPool_Fixp<BITS,W_x,2> ( (NMVecPad<BITS>) AAA, (NMVecPad<BITS>) CCC, Z, Ax, Ay );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
-    __max_pool_2d_a3_s2_byZ( CCC2, AAA );
+    __max_pool_2d_s2_byZ( CCC2, AAA, W_x, W_y );
 
     for ( z=0; z<8; z++ ){
     	if ( guard1[z]!=dog )
