@@ -43,21 +43,26 @@ static inline void convol_1x1fx( float* C, float* A, float* B, int XY, int Zin, 
 					: "+m"(dummy_to_link)
 					: "RA0"( pc ), "RG1"( XY ), "m"(*pc )
 					: "ar1" );
-			int zi;
-			for ( zi=0; zi<Zin; zi+=2 ){
-				const float* pa= A + zi + zo*Zin;
-				const float* pb= B + x  + zi*XY;
-				const float* pb1=B + x  + zi*XY + XY;
-				//	load Weights (A)
-				asm (
-						"fpu 0 rep vlen vreg0 = [ar2++gr2];\n\t"
-			//	All fpu-s got the same vector
-						"fpu 1 vreg0 = fpu 0 vreg0;\n\t"
-						"fpu 2 vreg0 = fpu 1 vreg0;\n\t"
-						"fpu 3 vreg0 = fpu 2 vreg0;\n\t"
-							: "+m" (dummy_to_link), "+RA2" (pa)
-							: "RG2"(Zin), "m"(*pa) );
+			const float* pa;
+			const float* pb;
+			const float* pb1;
+			int zi= 0;
+			//	load Weights (A)
+			pa= A + zi + zo*Zin;
+			asm (
+					"fpu 0 rep vlen vreg0 = [ar2++gr2];\n\t"
+		//	All fpu-s got the same vector
+					"fpu 1 vreg0 = fpu 0 vreg0;\n\t"
+					"fpu 2 vreg0 = fpu 1 vreg0;\n\t"
+					"fpu 3 vreg0 = fpu 2 vreg0;\n\t"
+						: "+m" (dummy_to_link), "+RA2" (pa)
+						: "RG2"(Zin), "m"(*pa) );
+			while ( true ){
+
+
 				//	load picture (B)
+				pb= B + x  + zi*XY;
+				pb1=B + x  + zi*XY + XY;
 				asm (
 						"fpu 0 rep 1 vreg4 = [%1++];\n\t"
 						"fpu 0 rep 1 vreg5 = [%2++];\n\t"
@@ -70,19 +75,9 @@ static inline void convol_1x1fx( float* C, float* A, float* B, int XY, int Zin, 
 							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
 							: "m"(*pb) );
 
-				//	computation
-				asm (
-						ALL_FPU (".matrix vreg7= vreg0 * .retrieve (vreg4,vreg5) + vreg7;")
-							: "+m" (dummy_to_link) );
-
 				zi+=2;
-				if ( ! (zi<Zin) )
-					break;
-
-				pa= A + zi + zo*Zin;
-				pb= B + x  + zi*XY;
-				pb1=B + x  + zi*XY + XY;
 				//	load Weights (A)
+				pa= A + zi + zo*Zin;
 				asm (
 						"fpu 0 rep vlen vreg1 = [ar0++gr0];\n\t"
 			//	All fpu-s got the same vector
@@ -91,31 +86,35 @@ static inline void convol_1x1fx( float* C, float* A, float* B, int XY, int Zin, 
 						"fpu 3 vreg1 = fpu 2 vreg1;\n\t"
 							: "+m" (dummy_to_link), "+RA0" (pa)
 							: "RG0"(Zin), "m"(*pa) );
-				//	load picture (B)
-				asm (
-						"fpu 0 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 0 rep 1 vreg3 = [%2++];\n\t"
-						"fpu 1 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 1 rep 1 vreg3 = [%2++];\n\t"
-						"fpu 2 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 2 rep 1 vreg3 = [%2++];\n\t"
-						"fpu 3 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 3 rep 1 vreg3 = [%2++];\n\t"
-							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
-							: "m"(*pb) );
-
 				//	computation
 				asm (
-						ALL_FPU (".matrix vreg7= vreg1 * .retrieve (vreg2,vreg3) + vreg7;")
+						ALL_FPU (".matrix vreg7= vreg0 * .retrieve (vreg4,vreg5) + vreg7;")
 							: "+m" (dummy_to_link) );
-				zi+=2;
+
 				if ( ! (zi<Zin) )
 					break;
 
-				pa= A + zi + zo*Zin;
+
+
+
+				//	load picture (B)
 				pb= B + x  + zi*XY;
 				pb1=B + x  + zi*XY + XY;
+				asm (
+						"fpu 0 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 0 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 1 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 1 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 2 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 2 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 3 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 3 rep 1 vreg5 = [%2++];\n\t"
+							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
+							: "m"(*pb) );
+
+				zi+=2;
 				//	load Weights (A)
+				pa= A + zi + zo*Zin;
 				asm (
 						"fpu 0 rep vlen vreg6 = [ar0++gr0];\n\t"
 			//	All fpu-s got the same vector
@@ -124,23 +123,161 @@ static inline void convol_1x1fx( float* C, float* A, float* B, int XY, int Zin, 
 						"fpu 3 vreg6 = fpu 2 vreg6;\n\t"
 							: "+m" (dummy_to_link), "+RA0" (pa)
 							: "RG0"(Zin), "m"(*pa) );
-				//	load picture (B)
+				//	computation
 				asm (
-						"fpu 0 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 0 rep 1 vreg3 = [%2++];\n\t"
-						"fpu 1 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 1 rep 1 vreg3 = [%2++];\n\t"
-						"fpu 2 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 2 rep 1 vreg3 = [%2++];\n\t"
-						"fpu 3 rep 1 vreg2 = [%1++];\n\t"
-						"fpu 3 rep 1 vreg3 = [%2++];\n\t"
+						ALL_FPU (".matrix vreg7= vreg1 * .retrieve (vreg4,vreg5) + vreg7;")
+							: "+m" (dummy_to_link) );
+
+				if ( ! (zi<Zin) )
+					break;
+
+
+
+
+				//	load picture (B)
+				pb= B + x  + zi*XY;
+				pb1=B + x  + zi*XY + XY;
+				asm (
+						"fpu 0 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 0 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 1 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 1 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 2 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 2 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 3 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 3 rep 1 vreg5 = [%2++];\n\t"
 							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
 							: "m"(*pb) );
 
+				zi+=2;
+				//	load Weights (A)
+				pa= A + zi + zo*Zin;
+				asm (
+						"fpu 0 rep vlen vreg0 = [ar2++gr2];\n\t"
+						//	All fpu-s got the same vector
+						"fpu 1 vreg0 = fpu 0 vreg0;\n\t"
+						"fpu 2 vreg0 = fpu 1 vreg0;\n\t"
+						"fpu 3 vreg0 = fpu 2 vreg0;\n\t"
+							: "+m" (dummy_to_link), "+RA2" (pa)
+							: "RG2"(Zin), "m"(*pa) );
 				//	computation
 				asm (
-						ALL_FPU (".matrix vreg7= vreg6 * .retrieve (vreg2,vreg3) + vreg7;")
+						ALL_FPU (".matrix vreg7= vreg6 * .retrieve (vreg4,vreg5) + vreg7;")
 							: "+m" (dummy_to_link) );
+				if ( ! (zi<Zin) )
+					break;
+
+
+
+
+				//	load picture (B)
+				pb= B + x  + zi*XY;
+				pb1=B + x  + zi*XY + XY;
+				asm (
+						"fpu 0 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 0 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 1 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 1 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 2 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 2 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 3 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 3 rep 1 vreg5 = [%2++];\n\t"
+							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
+							: "m"(*pb) );
+
+				zi+=2;
+				//	load Weights (A)
+				pa= A + zi + zo*Zin;
+				asm (
+						"fpu 0 rep vlen vreg1 = [ar0++gr0];\n\t"
+			//	All fpu-s got the same vector
+						"fpu 1 vreg1 = fpu 0 vreg1;\n\t"
+						"fpu 2 vreg1 = fpu 1 vreg1;\n\t"
+						"fpu 3 vreg1 = fpu 2 vreg1;\n\t"
+							: "+m" (dummy_to_link), "+RA0" (pa)
+							: "RG0"(Zin), "m"(*pa) );
+				//	computation
+				asm (
+						ALL_FPU (".matrix vreg7= vreg0 * .retrieve (vreg4,vreg5) + vreg7;")
+							: "+m" (dummy_to_link) );
+
+				if ( ! (zi<Zin) )
+					break;
+
+
+
+
+				//	load picture (B)
+				pb= B + x  + zi*XY;
+				pb1=B + x  + zi*XY + XY;
+				asm (
+						"fpu 0 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 0 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 1 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 1 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 2 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 2 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 3 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 3 rep 1 vreg5 = [%2++];\n\t"
+							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
+							: "m"(*pb) );
+
+				zi+=2;
+				//	load Weights (A)
+				pa= A + zi + zo*Zin;
+				asm (
+						"fpu 0 rep vlen vreg6 = [ar0++gr0];\n\t"
+			//	All fpu-s got the same vector
+						"fpu 1 vreg6 = fpu 0 vreg6;\n\t"
+						"fpu 2 vreg6 = fpu 1 vreg6;\n\t"
+						"fpu 3 vreg6 = fpu 2 vreg6;\n\t"
+							: "+m" (dummy_to_link), "+RA0" (pa)
+							: "RG0"(Zin), "m"(*pa) );
+				//	computation
+				asm (
+						ALL_FPU (".matrix vreg7= vreg1 * .retrieve (vreg4,vreg5) + vreg7;")
+							: "+m" (dummy_to_link) );
+
+				if ( ! (zi<Zin) )
+					break;
+
+
+
+
+				//	load picture (B)
+				pb= B + x  + zi*XY;
+				pb1=B + x  + zi*XY + XY;
+				asm (
+						"fpu 0 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 0 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 1 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 1 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 2 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 2 rep 1 vreg5 = [%2++];\n\t"
+						"fpu 3 rep 1 vreg4 = [%1++];\n\t"
+						"fpu 3 rep 1 vreg5 = [%2++];\n\t"
+							: "+m" (dummy_to_link), "+a" (pb), "+a" (pb1)
+							: "m"(*pb) );
+
+				zi+=2;
+				//	load Weights (A)
+				pa= A + zi + zo*Zin;
+				asm (
+						"fpu 0 rep vlen vreg0 = [ar2++gr2];\n\t"
+						//	All fpu-s got the same vector
+						"fpu 1 vreg0 = fpu 0 vreg0;\n\t"
+						"fpu 2 vreg0 = fpu 1 vreg0;\n\t"
+						"fpu 3 vreg0 = fpu 2 vreg0;\n\t"
+							: "+m" (dummy_to_link), "+RA2" (pa)
+							: "RG2"(Zin), "m"(*pa) );
+				//	computation
+				asm (
+						ALL_FPU (".matrix vreg7= vreg6 * .retrieve (vreg4,vreg5) + vreg7;")
+							: "+m" (dummy_to_link) );
+				if ( ! (zi<Zin) )
+					break;
+
+
 			}
 			asm (
 					"fpu 0 rep vlen [ar1++gr1]= vreg7;		\n\t"
