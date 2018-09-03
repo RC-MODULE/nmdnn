@@ -75,7 +75,6 @@ void LeakyReLU(float *input, float *output, int sz,float alfa)
 				ALL_FPU (".float vreg0 = not mask ? vreg0 * .retrive(vreg5) : vreg0;")
 					: "+a" (cfs) : "r"(input) );	//	провязываем инструкции зависимостями
 
-
 		//	WRITE INT
 		asm ( 	"vlen = %2;  \n\t"
 				"fpu 0 rep vlen [%0++] = vreg0; 	\n\t"

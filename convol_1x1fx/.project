@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>maxpool_3x3fx</name>
+	<name>convol_1x1fx</name>
 	<comment></comment>
 	<projects>
 	</projects>
