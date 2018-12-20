@@ -22,10 +22,8 @@ begin text
     ar5 = transpose with gr7--;
     vlen = gr7 with gr7 = gr7 >> 5;             //      sz % 32
 
-    fpu 2  rep 1 vreg4= [ar5++];
-    fpu 2  rep 1 vreg5= [ar5++];
-    fpu 0 vreg4 = fpu 2 vreg4;
-    fpu 0 vreg5 = fpu 2 vreg5;
+    fpu 0  rep 1 vreg4= [ar5++];
+    fpu 0  rep 1 vreg5= [ar5++];
     fpu 1 vreg4 = fpu 0 vreg4;
     fpu 1 vreg5 = fpu 0 vreg5;
     
@@ -60,9 +58,6 @@ begin text
     
     fpu 0  .matrix vreg3= vreg0 * .retrive( vreg4,vreg5 );	//	swap
     fpu 1  .matrix vreg3= vreg0 * .retrive( vreg4,vreg5 );	//	swap
-    
-    fpu 1 vreg6 = fpu 2 vreg3;    
-    fpu 0 vreg6 = fpu 1 vreg0;    
     
     //  11..
     //   \/
