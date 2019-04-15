@@ -3,6 +3,8 @@ extern "C" void exit(int);
 
 #include "nmpp.h"
 #include "simple_wraps.h"
+//#include "convol_fixp_alt.h"  //	¬ этой версии используетс€ самописный mmul
+//	¬ этой версии дл€ перемножени€ матриц используетс€ nmppmMul_mm из nmpp
 #include "convol_fixp.h"
 
 #define Kbits 8
@@ -135,7 +137,7 @@ int convol_test()
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<ZZout; z++ ){
 				if ( res[y][x][z] != et[y][x][z] )
-					return z+1;
+					return -z-1;
 			}
 		}
 	}

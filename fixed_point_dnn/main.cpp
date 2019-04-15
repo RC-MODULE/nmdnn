@@ -18,8 +18,8 @@ int main()
 					"[40000806h] = gr7;    	\n\t"	//	timer setup 4
 					: : : "gr7" );
 
-	return maxpool_test();
+	//return maxpool_test();
 	//return mmul_test();
-	//return convol_test();
+	return convol_test();
 }
 
