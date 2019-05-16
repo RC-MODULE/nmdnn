@@ -8,6 +8,7 @@
 int mmul_test();
 int maxpool_test();
 int convol_test();
+int convol_swap_test();
 
 int main()
 {
@@ -20,6 +21,6 @@ int main()
 
 	//return maxpool_test();
 	//return mmul_test();
-	return convol_test();
+	return convol_swap_test();
 }
 

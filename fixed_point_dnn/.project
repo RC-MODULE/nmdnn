@@ -24,4 +24,26 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>host_duties.h</name>
+			<type>1</type>
+			<location>E:/Les/src/lowlevel/nm_io_service/workspace/printf_gcc/host_duties.h</location>
+		</link>
+		<link>
+			<name>printf.cpp</name>
+			<type>1</type>
+			<location>E:/Les/src/lowlevel/nm_io_service/workspace/printf_gcc/printf.cpp</location>
+		</link>
+		<link>
+			<name>printf.h</name>
+			<type>1</type>
+			<location>E:/Les/src/lowlevel/nm_io_service/workspace/printf_gcc/printf.h</location>
+		</link>
+		<link>
+			<name>puts.cpp</name>
+			<type>1</type>
+			<location>E:/Les/src/lowlevel/nm_io_service/workspace/printf_gcc/puts.cpp</location>
+		</link>
+	</linkedResources>
 </projectDescription>

@@ -25,6 +25,7 @@ struct BitsToTypesMapper
 //	макрос дл€ быстрого создани€ реализации
 
 typedef void nm4s3b;
+typedef void nm2s1b;
 
 #define XNMPP_ETYPE_DEF(x,y) template<> struct BitsToTypesMapper<x> { \
 	typedef nm##x##s* TS;\
@@ -42,6 +43,7 @@ NMPP_ETYPE_DEF(32,31)
 NMPP_ETYPE_DEF(16,15)
 NMPP_ETYPE_DEF(8,7)
 NMPP_ETYPE_DEF(4,3)
+NMPP_ETYPE_DEF(2,1)
 
 
 template<int BITS> using NMVec = typename BitsToTypesMapper<BITS>::TS;
@@ -111,6 +113,7 @@ NMPP_PUT_DEF(64)
 NMPP_PUT_DEF(32)
 NMPP_PUT_DEF(16)
 NMPP_PUT_DEF(8)
+NMPP_PUT_DEF(2)
 
 
 
@@ -130,6 +133,7 @@ NMPP_PUT_DEF(8)
 NMPP_GET_DEF(32)
 NMPP_GET_DEF(16)
 NMPP_GET_DEF(8)
+NMPP_GET_DEF(2)
 
 template<> inline NMValue<64>
 		 nmppsGet<64>( NMVec<64> pVec, int nIndex )
@@ -146,9 +150,11 @@ nmppsGetVal<x>( NMVec<x> pVec, int nIndex, NMValue<x>* pVal )	\
 #define NMPP_GETVAL_DEF(x) XNMPP_GETVAL_DEF(x)
 
 //	«десь создаютс€ реализации экземпл€ров
+NMPP_GETVAL_DEF(64)
 NMPP_GETVAL_DEF(32)
 NMPP_GETVAL_DEF(16)
 NMPP_GETVAL_DEF(8)
+NMPP_GETVAL_DEF(2)
 
 
 
@@ -165,6 +171,8 @@ nmppmMul_mm<k,j>( NMVec<k> pSrcMtr1, int nHeight1, int nWidth1, NMVec<j> pSrcMtr
 
 NMPP_MMUL_DEF(16,32)
 NMPP_MMUL_DEF(8 ,32)
+NMPP_MMUL_DEF(8 ,64)
+NMPP_MMUL_DEF(2 ,64)
 
 
 
