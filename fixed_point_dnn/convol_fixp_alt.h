@@ -5,6 +5,28 @@
 //	¬ этой версии используетс€ самописный mmul
 
 
+//	UNVECTORIZED REFERENCE
+
+//				int ix, jx, kx;
+//				for ( ix=0, i= ii* IStep; ix<IStep; ix++, i++ ){
+//					for ( jx=0, j= jj* JStep; jx<JStep; jx++, j++ ){
+//						NMValue< Jbits > ce;
+//						if ( !beta && kk==0 ){
+//							ce= 0;
+//						}
+//						else{
+//							ce= nmppsGet< Jbits > ((NMVec< Jbits >)C, j + i*ldc );
+//						}
+//						for ( kx=0, k= kk* KStep; kx<KStep; kx++, k++ ){
+//							NMValue< Kbits > aVal= nmppsGet< Kbits > ((NMVec< Kbits >)A, k + i*lda );
+//							NMValue< Jbits > bVal= nmppsGet< Jbits > ((NMVec< Jbits >)B, j + k*ldb );
+//							ce += aVal * bVal;
+//						}
+//						nmppsPut< Jbits > ( ( NMVec< Jbits > )C, j + i*ldc, ce );
+//					}
+//				}
+
+
 template <int Kbits, int Jbits>
 //__attribute__ ((section(".text_int")))	//	does not work in GCC!
 void proto_nmpp_gemm(
@@ -26,28 +48,28 @@ void proto_nmpp_gemm(
 	const int KStep = 64/Kbits;
 	const int KK = K/KStep;
 
-	const int lda = _lda /KStep *2;
-	const int ldb = _ldb /JStep *2;
-	const int ldc = _ldc /JStep *2;
+	const int lda = _lda /KStep;    //	в 64-словах!
+	const int ldb = _ldb /JStep;
+	const int ldc = _ldc /JStep;
 
 	int dummy_order=0;
 
-	asm ( 	"sir = %1;								\n\t"
+	asm ( 	"sir = %1;								\n\t"	//	nmc4
 			"nb1 = sir;								\n\t"
 			"sir = %2;								\n\t"
 			"sb  = sir;	"
 			  : "=g"(dummy_order)
 			  : "i"(nb_from_bitWidth(Jbits)),
 				"i"(sb_from_bitWidth(Kbits)) );
-//	asm ( 	"nb1 = %1;								\n\t"
+//	asm ( 	"nb1 = %1;								\n\t"	//	nmc3
 //			"sb = %2;								\n\t"
 //			  : "=g"(dummy_order)
 //			  : "i"(nb_from_bitWidth(Jbits)),
 //				"i"(sb_from_bitWidth(Kbits)) );
 
-
 	int i, j, k;
 	int ii,jj,kk;
+
 	for ( ii=0; ii<II; ii++ ){
 		i= ii* IStep;
 		for ( jj=0; jj<JJ; jj++ ){
@@ -55,61 +77,50 @@ void proto_nmpp_gemm(
 
 			long long* cc = &(C[i*ldc +jj]);
 			if ( beta ){
+			    kk=0;
 				asm ( 	"rep 32 data = [%1++%2] with data;	"
 							:   "+g"(dummy_order), "+RA0" (cc)
-							: "RG0"(ldc), "m"(*cc) );
+							: "RG0"(ldc*2), "m"(*cc) );
 			}
+			else{
+                kk=1;
+                long long* bb = &(B[jj]);
 
-			for ( kk=0; kk<KK; kk++ ){
+                asm (   "rep %3 wfifo = [%0++%2], ftw;      "
+                            : "+RA1" (bb),   "+g"(dummy_order)
+                            : "RG1"(ldb*2), "i"(KStep), "m"(*bb) );
+
+                long long* aa = &(A[i*lda]);
+                asm (   "wtw;                               \n\t"
+                        "rep 32 data = [%0++%2] with vsum , data, 0;    "
+                            : "+RA2" (aa),   "+g"(dummy_order)
+                            : "RG2"(lda*2), "m"(*aa) );
+            }
+
+			for ( ; kk<KK; kk++ ){
 				k= kk* KStep;
 
 				long long* bb = &(B[k*ldb +jj]);
 
 				asm ( 	"rep %3 wfifo = [%0++%2], ftw;		"
-							: "+RA0" (bb),   "+g"(dummy_order)
-							: "RG0"(ldb), "i"(KStep), "m"(*bb) );
+							: "+RA1" (bb),   "+g"(dummy_order)
+							: "RG1"(ldb*2), "i"(KStep), "m"(*bb) );
 
 				long long* aa = &(A[i*lda +kk]);
-				if ( !beta && kk==0 ){
-					asm ( 	"wtw;	                            \n\t"
-							"rep 32 data = [%0++%2] with vsum , data, 0;	"
-								: "+RA0" (aa),   "+g"(dummy_order)
-								: "RG0"(lda), "m"(*aa) );
-				}
-				else{
-					asm ( 	"wtw;	                            \n\t"
-							"rep 32 data = [%0++%2] with vsum , data, afifo;	"
-								: "+RA0" (aa),   "+g"(dummy_order)
-								: "RG0"(lda), "m"(*aa) );
-				}
-
-
-//				int ix, jx, kx;
-//				for ( ix=0, i= ii* IStep; ix<IStep; ix++, i++ ){
-//					for ( jx=0, j= jj* JStep; jx<JStep; jx++, j++ ){
-//						NMValue< Jbits > ce;
-//						if ( !beta && kk==0 ){
-//							ce= 0;
-//						}
-//						else{
-//							ce= nmppsGet< Jbits > ((NMVec< Jbits >)C, j + i*ldc );
-//						}
-//						for ( kx=0, k= kk* KStep; kx<KStep; kx++, k++ ){
-//							NMValue< Kbits > aVal= nmppsGet< Kbits > ((NMVec< Kbits >)A, k + i*lda );
-//							NMValue< Jbits > bVal= nmppsGet< Jbits > ((NMVec< Jbits >)B, j + k*ldb );
-//							ce += aVal * bVal;
-//						}
-//						nmppsPut< Jbits > ( ( NMVec< Jbits > )C, j + i*ldc, ce );
-//					}
-//				}
+                asm ( 	"wtw;	                            \n\t"
+                        "rep 32 data = [%0++%2] with vsum , data, afifo;	"
+                            : "+RA2" (aa),   "+g"(dummy_order)
+                            : "RG2"(lda*2), "m"(*aa) );
 			}
 			cc = &(C[i*ldc +jj]);
 			asm ( 	"rep 32 [%2++%3] = afifo;	"
 						: "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
-							: "RG0"(ldc) );
+							: "RG0"(ldc*2) );
 
 		}
 	}
+
+
 	i= ii* IStep;
 	for (    ; i<I; i++ ){
 		for ( j=0; j<J; j++ ){
