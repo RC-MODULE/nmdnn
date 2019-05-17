@@ -11,7 +11,7 @@
 //	Jbits: сколько битов на число в матрице B, C
 //	KERN_SZ: размер окна (у нас 3)
 template <int Kbits, int Jbits, int KERN_SZ, int PIC_Y, int PIC_X, int PIC_Z, int OUT_Z >
-//__attribute__ ((section(".text_int")))	//	does not work in GCC!
+__attribute__ ((section(".text_int_X")))	//	does not work in GCC!
 void nmppDnn_Convolution_Fixp_Swap (
 		long long pSrc[] [PIC_Y ] [ PIC_X /(64/Jbits) ],	//	вход
 		long long pKernel[] [KERN_SZ] [KERN_SZ] [ PIC_Z /(64/Kbits) ],//	вход
