@@ -15,11 +15,11 @@ extern "C" int printf( const char* format,...);
 //
 
 //
-const int Xout= 2;
+const int Xout= 1;
 const int Yout= 1;
-const int Zin= 256;	// *4
+const int Zin= 3;	// *4
 //
-const int Zout = 128;	// *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 32;	// *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 ////const int Xin= 40;
@@ -34,7 +34,7 @@ const int Ky   = Kx;             //  окно по вертикали
 const int Xin= Xout+Kx-1;
 const int Yin= Yout+Ky-1;
 //
-const int ZZin  = Zin /(64/Kbits);
+const int ZZin  = 1+ (Zin-1) /(64/Kbits);   //  округление вверх
 //const int ZZout = Zout/(64/Jbits);
 //
 __attribute__ ((section(".data_imu1"))) long long pic_sw [Zin] [Yin ] [Xin ];
@@ -77,12 +77,16 @@ int convol_swap_test()
 	int z2;
 	for ( x=0; x<Kx; x++ ){
 		for ( y=0; y<Ky; y++ ){
-			for ( z=0; z<Zin; z++ ){
-				for ( z2=0; z2<Zout; z2++ ){
+            for ( z2=0; z2<Zout; z2++ ){
+                for ( z=0; z<Zin; z++ ){
 //					nmppsPut< Jbits > ( ( NMVec< Jbits > )&(kern_sw[y][x][z2][0]), z, ( NMValue< Jbits > )( myRnd() ) );
 //					nmppsPut< Jbits > ( ( NMVec< Jbits > )&(kern[y][x][z2][0]), z, ( NMValue< Jbits > )( x==0 && y==0 && z==z2 ) );
 					nmppsPut< Kbits > ( ( NMVec< Kbits > )&(kern_sw[z2][y][x][0]), z, ( NMValue< Kbits > )( myRnd() ) );
 				}
+                for ( ; z<32; z++ ){
+                    //  Если Zin меньше 32, добиваем веса нулями, будет умножаться на мусор
+                    nmppsPut< Kbits > ( ( NMVec< Kbits > )&(kern_sw[z2][y][x][0]), z, ( NMValue< Kbits > )( 0 ) );
+                }
 			}
 		}
 	}
@@ -156,16 +160,16 @@ int convol_swap_test()
 		}
 		printf( "\t\n" );
 	}
-//	for ( x=0; x<Xout; x++ ){
-//		for ( y=0; y<Yout; y++ ){
-//			for ( z=0; z<Zout; z++ ){
-//				if ( res_sw[z][y][x] != et_sw[z][y][x] ){
-//					printf( " y: %d x: %d z: %d res: %lld et: %lld\n", y, x, z, res_sw[z][y][x], et_sw[z][y][x] );
-//					return -z-1;
-//				}
-//			}
-//		}
-//	}
+	for ( x=0; x<Xout; x++ ){
+		for ( y=0; y<Yout; y++ ){
+			for ( z=0; z<Zout; z++ ){
+				if ( res_sw[z][y][x] != et_sw[z][y][x] ){
+					printf( " y: %d x: %d z: %d res: %lld et: %lld\n", y, x, z, res_sw[z][y][x], et_sw[z][y][x] );
+					return -z-1;
+				}
+			}
+		}
+	}
 
 	return t2-t1;//C[0][0];res[0][0][34];
 }

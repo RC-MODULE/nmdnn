@@ -14,7 +14,7 @@ template <int Kbits, int Jbits, int KERN_SZ, int PIC_Y, int PIC_X, int PIC_Z, in
 __attribute__ ((section(".text_int_X")))	//	does not work in GCC!
 void nmppDnn_Convolution_Fixp_Swap (
 		long long pSrc[] [PIC_Y ] [ PIC_X /(64/Jbits) ],	//	вход
-		long long pKernel[] [KERN_SZ] [KERN_SZ] [ PIC_Z /(64/Kbits) ],//	вход
+		long long pKernel[] [KERN_SZ] [KERN_SZ] [ 1+ (PIC_Z-1) /(64/Kbits) ],//	вход
 		long long pDstC[] [PIC_Y-KERN_SZ+1] [ (PIC_X-KERN_SZ+1) /(64/Jbits) ]	//	выход
 		 )
 {
@@ -44,10 +44,10 @@ void nmppDnn_Convolution_Fixp_Swap (
 //					nmppsAdd<Jbits>( C, C_r, C, OUT_Z*OUT_X );
 //				}
 				int I= OUT_Z;
-				int K= PIC_Z;
+				int K= (1+ (PIC_Z-1) /(64/Kbits)) *(64/Kbits);
 				int J= OUT_X;
 
-				int LDA= PIC_Z *KERN_SZ *KERN_SZ;
+				int LDA= K *KERN_SZ *KERN_SZ;
                 int LDB= PIC_X *PIC_Y;
                 int LDC= OUT_X *OUT_Y;
 
