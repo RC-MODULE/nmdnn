@@ -2,8 +2,13 @@
 #include "simple_wraps.h"
 #include "nbsb_builder.h"
 
-//	В этой версии используется самописный mmul
+//  В этой версии используется используется nmppmMul_mm из nmpp для перемножения матриц
 
+static inline void ppRELU( int& dummy_order )
+{
+    asm (   "rep 32  with not activate afifo and afifo;   "
+                            : "+g"(dummy_order) );
+}
 
 //	UNVECTORIZED REFERENCE
 
@@ -25,9 +30,12 @@
 //						nmppsPut< Jbits > ( ( NMVec< Jbits > )C, j + i*ldc, ce );
 //					}
 //				}
+typedef void (*PostProcessType)(int&);
 
+static inline void ppID( int& x )
+{}
 
-template <int Kbits, int Jbits>
+template <int Kbits, int Jbits, PostProcessType ppfunc >
 //__attribute__ ((section(".text_int")))	//	does not work in GCC!
 void proto_nmpp_gemm(
 		const int I,
@@ -37,7 +45,8 @@ void proto_nmpp_gemm(
         const int _lda,	// I,K,J, lda, ldb, ldc - в элементах !
 		long long *B,
 		const int _ldb,
-		bool beta,	//	C = beta ? A*B+C : A*B
+        bool beta,  //  C = beta ? A*B+C : A*B
+        bool doPP,  //  do preprocessing
 		long long *C,
 		const int _ldc)
 {
@@ -55,7 +64,11 @@ void proto_nmpp_gemm(
 	int dummy_order=0;
 
 	asm ( 	"sir = %1;								\n\t"	//	nmc4
-			"nb1 = sir;								\n\t"
+            "nb1 = sir;                             \n\t"
+            "sir = 0x0;                              \n\t"   //  nmc4
+            "f1crl = sir;                             \n\t"
+            "sir = 0x80000000;                              \n\t"   //  nmc4
+            "f1crh = sir;                             \n\t"
 			"sir = %2;								\n\t"
 			"sb  = sir;	"
 			  : "=g"(dummy_order)
@@ -113,6 +126,8 @@ void proto_nmpp_gemm(
                             : "RG2"(lda*2), "m"(*aa) );
 			}
 			cc = &(C[i*ldc +jj]);
+			if ( doPP )
+			    ppfunc( dummy_order );
 			asm ( 	"rep 32 [%2++%3] = afifo;	"
 						: "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
 							: "RG0"(ldc*2) );
@@ -142,37 +157,64 @@ void proto_nmpp_gemm(
 }
 
 
-//	Свёртка
-//	Параметры шаблона:
-//	Kbits: сколько битов на число в матрице А
-//	Jbits: сколько битов на число в матрице B, C
-//	KERN_SZ: размер окна (у нас 3)
-template <int Kbits, int Jbits, int KERN_SZ, int PIC_X, int PIC_Z, int OUT_Z >
-//__attribute__ ((section(".text_int")))	//	does not work in GCC!
-void nmppDnn_Convolution_Fixp (
-		long long pSrc[] [PIC_X ] [ PIC_Z /(64/Kbits) ],	//	вход
-		long long pKernel[] [KERN_SZ] [ PIC_Z ] [OUT_Z /(64/Jbits) ],//	вход
-		long long pDstC[] [PIC_X-KERN_SZ+1] [ OUT_Z /(64/Jbits) ],	//	выход
-		int pic_Y )		//	размер окна по Y на входе
+
+//  Свёртка
+//  Параметры шаблона:
+//  Kbits: сколько битов на число в матрице А
+//  Jbits: сколько битов на число в матрице B, C
+//  KERN_SZ: размер окна (у нас 3)
+template <int Kbits, int Jbits, int KERN_SZ, int OUT_Y, int OUT_X, int PIC_Z, int OUT_Z >
+__attribute__ ((section(".text_int_X")))    //  does not work in GCC!
+void nmppDnn_Convolution_Fixp_Swap (
+        long long pSrc[] [ OUT_Y+KERN_SZ-1 ] [ (OUT_X+KERN_SZ-1) /(64/Jbits) ],    //  вход
+        long long pKernel[] [KERN_SZ] [KERN_SZ] [ 1+ (PIC_Z-1) /(64/Kbits) ],// вход
+        long long pDstC[] [OUT_Y] [ (OUT_X) /(64/Jbits) ]   //  выход
+         )
 {
-	int y;
+    int y;
 
 
-	for ( y=0; y< pic_Y -KERN_SZ +1; y++ ){
-		int ky;
-		for ( ky=0; ky<KERN_SZ; ky++ ){
-			NMVec<Kbits> A=   (NMVec<Kbits>)  &pSrc[y+ky] [0 ] [0];
-			NMVec<Jbits> B=   (NMVec<Jbits>)  &pKernel[ky] [0] [0] [0];
-			NMVec<Jbits> C=	  (NMVec<Jbits>)  &pDstC[y] [0] [0];
+    const int PIC_X= OUT_X+KERN_SZ-1;
+    const int PIC_Y= OUT_Y+KERN_SZ-1;
 
-			int I= PIC_X -KERN_SZ +1;
-			int K= PIC_Z *KERN_SZ;
-			int J= OUT_Z;
-			proto_nmpp_gemm<Kbits,Jbits>(
-					I, K, J,
-					(long long*)A, PIC_Z /(64/Kbits),
-					(long long*)B, OUT_Z /(64/Jbits), ky!=0 ,
-					(long long*)C, OUT_Z /(64/Jbits) );
-		}
-	}
+//  long long res_row [OUT_Z][OUT_X /(64/Jbits)];
+    for ( y=0; y< PIC_Y -KERN_SZ +1; y++ ){
+        int ky,kx;
+        for ( ky=0; ky<KERN_SZ; ky++ ){
+            for ( kx=0; kx<KERN_SZ; kx++ ){
+                NMVec<Kbits> A=   (NMVec<Kbits>)  &pKernel [0] [ky] [kx] [0];
+                NMVec<Jbits> B=   (NMVec<Jbits>)  &pSrc [0] [y+ky] [kx ];
+                NMVec<Jbits> C=   (NMVec<Jbits>)  &pDstC [0] [y] [0];
+//              NMVec<Jbits> C_r= (NMVec<Jbits>)  &res_row [0] [0];
+
+//              nmppmMul_mm<Kbits,Jbits>(   A,
+//                                          OUT_Z,
+//                                          PIC_Z,
+//                                          B,
+//                                          kx==0 && ky==0 ? C : C_r,
+//                                          OUT_X );
+//              if ( kx!=0 || ky!=0 ){
+//                  nmppsAdd<Jbits>( C, C_r, C, OUT_Z*OUT_X );
+//              }
+                int I= OUT_Z;
+                int K= (1+ (PIC_Z-1) /(64/Kbits)) *(64/Kbits);
+                int J= OUT_X;
+
+                int LDA= K *KERN_SZ *KERN_SZ;
+                int LDB= PIC_X *PIC_Y;
+                int LDC= OUT_X *OUT_Y;
+
+                proto_nmpp_gemm<Kbits,Jbits,ppRELU>(
+                        I, K, J,
+                        (long long*)A, LDA,
+                        (long long*)B, LDB,
+                        kx!=0 || ky!=0 ,  kx==KERN_SZ-1 && ky==KERN_SZ-1 ,
+                        (long long*)C, LDC );
+
+            }
+        }
+    }
 }
+
+
+

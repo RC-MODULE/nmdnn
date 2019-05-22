@@ -4,6 +4,7 @@
 //extern "C" void exit(int);
 //
 extern "C" int printf( const char* format,...);
+#include<cassert>
 //#include "nmpp.h"
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
@@ -15,13 +16,14 @@ extern "C" int printf( const char* format,...);
 //
 
 //
-const int Xout= 1;
-const int Yout= 1;
-const int Zin= 3;	// *4
+const int Xout= 2;
+const int Yout= 2;
+const int Zin= 64;	// *4
 //
-const int Zout = 32;	// *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 64;	// *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
+const int Stride = 2;
 ////const int Xin= 40;
 ////const int Yin= 3;
 ////const int Zin= 16;
@@ -31,8 +33,8 @@ const int Ky   = Kx;             //  окно по вертикали
 ////const int Ky   = 1;             //  окно по вертикали
 //const int Ksz  = Kx * Ky;       //  размер ядра (K)
 //
-const int Xin= Xout+Kx-1;
-const int Yin= Yout+Ky-1;
+const int Xin= (Xout-1)*Stride +Kx;
+const int Yin= (Yout-1)*Stride +Ky;
 //
 const int ZZin  = 1+ (Zin-1) /(64/Kbits);   //  округление вверх
 //const int ZZout = Zout/(64/Jbits);
@@ -110,7 +112,7 @@ int convol_swap_test()
 							NMValue< Jbits > aVal;
 							NMValue< Kbits > bVal;
 
-							nmppsGetVal< Jbits > ( ( NMVec< Jbits > )&(pic_sw[zz][y+yy]), x+xx, &aVal );
+							nmppsGetVal< Jbits > ( ( NMVec< Jbits > )&(pic_sw[zz][y*Stride+yy]), x*Stride+xx, &aVal );
 
 							nmppsGetVal< Kbits > ( ( NMVec< Kbits > )&(kern_sw[z][yy][xx][0]), zz, &bVal );
 
@@ -121,6 +123,8 @@ int convol_swap_test()
 	        			}
 	                }
 				}
+	            if ( ce<0 )
+	                ce = 0;
 				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(et_sw[z][y][0]), x, ce );
 			}
 		}
@@ -129,7 +133,7 @@ int convol_swap_test()
 	int t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
-	nmppDnn_Convolution_Fixp_Swap<Kbits, Jbits, Kx, Yin, Xin, Zin, Zout >( pic_sw, kern_sw, res_sw );
+	nmppDnn_Convolution_Fixp_Swap_2<Kbits, Jbits, Kx, Yout, Xout, Zin, Zout, Stride >( pic_sw, kern_sw, res_sw );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
@@ -147,19 +151,20 @@ int convol_swap_test()
 	for ( z=0; z<4; z++ ){
 		for ( x=0; x<8 && x<Xout; x++ ){
 			for ( y=0; y<Yout; y++ ){
-				printf( " %3llx ", et_sw[z][y][x] );
+				printf( " %16llx ", et_sw[z][y][x] );
 			}
 			printf( "-=-" );
 		}
 		printf( "\t\n" );
 		for ( x=0; x<8 && x<Xout ; x++ ){
 			for ( y=0; y<Yout; y++ ){
-				printf( " %3llx ", res_sw[z][y][x] );
+				printf( " %16llx ", res_sw[z][y][x] );
 			}
 			printf( "-o-" );
 		}
 		printf( "\t\n" );
 	}
+    printf( "TIME: %d = 0x%x\t\n", t2-t1, t2-t1 );
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<Zout; z++ ){
@@ -171,7 +176,7 @@ int convol_swap_test()
 		}
 	}
 
-	return t2-t1;//C[0][0];res[0][0][34];
+	return 0;//C[0][0];res[0][0][34];
 }
 
 
