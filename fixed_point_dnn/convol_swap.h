@@ -81,9 +81,9 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
                 long long* cc = &(((long long*)nmC)[i*ldc +jj]);
                 if ( BETA ){
                     kk=0;
-                    asm (   "rep 32 data = [%1++%2] with data;  "
+                    asm (   "rep %4 data = [%1++%2] with data;  "
                                 :   "+g"(dummy_order), "+RA0" (cc)
-                                : "RG0"(ldc*2), "m"(*cc) );
+                                : "RG0"(ldc*2), "m"(*cc), "i"(IStep) );
                 }
                 else{
                     kk=1;
@@ -97,9 +97,9 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
 
                     long long* aa = &(((long long*)nmA)[i*lda]);
                     asm (   "wtw;                               \n\t"
-                            "rep 32 data = [%0++%2] with vsum , data, 0;    "
+                            "rep %4 data = [%0++%2] with vsum , data, 0;    "
                                 : "+RA2" (aa),   "+g"(dummy_order)
-                                : "RG2"(lda*2), "m"(*aa) );
+                                : "RG2"(lda*2), "m"(*aa), "i"(IStep) );
                 }
 
                 int ky,kx;
@@ -121,9 +121,9 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
 
                             long long* aa = &(((long long*)nmA)[i*lda +kk]);
                             asm (   "wtw;                               \n\t"
-                                    "rep 32 data = [%0++%2] with vsum , data, afifo;    "
+                                    "rep %4 data = [%0++%2] with vsum , data, afifo;    "
                                         : "+RA2" (aa),   "+g"(dummy_order)
-                                        : "RG2"(lda*2), "m"(*aa) );
+                                        : "RG2"(lda*2), "m"(*aa), "i"(IStep) );
                         }
 
                         kk=0;
@@ -134,9 +134,9 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
 
                 cc = &(((long long*)nmC)[i*ldc +jj]);
                 ppRELU( dummy_order );
-                asm (   "rep 32 [%2++%3] = afifo;   "
+                asm (   "rep %4 [%2++%3] = afifo;   "
                             : "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
-                                : "RG0"(ldc*2) );
+                                : "RG0"(ldc*2), "i"(IStep) );
             }
         }
     }
