@@ -18,9 +18,9 @@ extern "C" int printf( const char* format,...);
 //
 const int Xout= 2;
 const int Yout= 2;
-const int Zin= 128;	// *4
+const int Zin= 64;	// *4
 //
-const int Zout = 16;	// *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 64;	// *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
@@ -74,7 +74,9 @@ int convol_swap_test()
 		}
 	}
 
-	printf("==%p==%p==%p==\n", pic_sw, kern_sw, res_sw );
+    printf(": Kbits: %d  Jbits: %d Xout: %d Yout: %d Zin: %d Zout: %d Kx: %d Stride: %d\n",
+             Kbits,     Jbits,    Xout,    Yout,    Zin,    Zout,    Kx,    Stride );
+    printf("==%p==%p==%p==\n", pic_sw, kern_sw, res_sw );
 
 	int z2;
 	for ( x=0; x<Kx; x++ ){
@@ -96,7 +98,7 @@ int convol_swap_test()
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<Zout; z++ ){
-				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(res_sw[z][y][0]), x, ( NMValue< Jbits > )0xcdcdcdcdcdll );
+				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(res_sw[z][y][0]), x, ( NMValue< Jbits > )0x100ll );
 			}
 		}
 	}
@@ -104,7 +106,7 @@ int convol_swap_test()
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<Zout; z++ ){
-				NMValue< Jbits > ce = 0;
+				NMValue< Jbits > ce = 0x100;
 				int xx,yy,zz;
 	            for ( yy=0; yy<Ky; yy++ ){
 	                for ( xx=0; xx<Kx; xx++ ){
@@ -133,7 +135,7 @@ int convol_swap_test()
 	int t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
-	nmppDnn_Convolution_Fixp_Swap_2<Kbits, Jbits, Kx, Yout, Xout, Zin, Zout, Stride >( pic_sw, kern_sw, res_sw );
+	nmppDnn_Convolution_Fixp_Swap_2<Kbits, Jbits, preADD_OLD_C, Kx, Yout, Xout, Zin, Zout, Stride >( pic_sw, kern_sw, res_sw );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
@@ -164,19 +166,23 @@ int convol_swap_test()
 		}
 		printf( "\t\n" );
 	}
-    printf( "TIME: %d = 0x%x\t\n", t2-t1, t2-t1 );
+	int ret = 0;
+	x=0;
+	y=0;
+	z=0;
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
-			for ( z=0; z<Zout; z++ ){
+			for ( z=0; z<16; z++ ){
 				if ( res_sw[z][y][x] != et_sw[z][y][x] ){
-					printf( " y: %d x: %d z: %d res: %lld et: %lld\n", y, x, z, res_sw[z][y][x], et_sw[z][y][x] );
-					return -z-1;
+					printf( ": ERR  y: %d x: %d z: %d res: %lld et: %lld\n", y, x, z, res_sw[z][y][x], et_sw[z][y][x] );
+					ret= -1;
 				}
 			}
 		}
 	}
+    printf( ": TIME: %d = 0x%x\n:\n", t2-t1, t2-t1 );
 
-	return 0;//C[0][0];res[0][0][34];
+	return ret;//C[0][0];res[0][0][34];
 }
 
 

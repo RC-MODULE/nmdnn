@@ -2,11 +2,35 @@
 #include "simple_wraps.h"
 #include "nbsb_builder.h"
 
-static inline void ppRELU( int& dummy_order )
+static inline void postRELU( const int rep, int& dummy_order )
 {
-    asm (   "rep 32  with not activate afifo and afifo;   "
-                            : "+g"(dummy_order) );
+    asm (   "rep %1  with not activate afifo and afifo;   "
+                            : "+g"(dummy_order)
+                            : "i"(rep) );
 }
+
+static inline void preZERO( const int rep, int& dummy_order, long long* cc, const int ldc )
+{
+    asm (   "rep %1  with vfalse;   "
+                            : "+g"(dummy_order)
+                            : "i"(rep) );
+}
+
+static inline void preADD_OLD_C( const int rep, int& dummy_order, long long* cc, const int ldc )
+{
+    asm (   "rep %4 data = [%1++%2] with data;  "
+                :   "+g"(dummy_order), "+RA0" (cc)
+                : "RG0"(ldc*2), "m"(*cc), "i"(rep) );
+}
+
+static inline void preBIAS_X( long long* ptr, const int rep, int& dummy_order )
+{
+    asm (   "rep %2 data= [%1++] with data;   "
+                            : "+g"(dummy_order), "+a"(ptr)
+                            : "i"(rep), "m"(*ptr) );
+}
+
+typedef void (*PreProcessType)(const int rep, int& dummy_order, long long* cc, const int ldc);
 
 //  ¬ этой версии используетс€ самописный mmul
 
@@ -15,7 +39,7 @@ static inline void ppRELU( int& dummy_order )
 //  Kbits: сколько битов на число в матрице ј
 //  Jbits: сколько битов на число в матрице B, C
 //  KERN_SZ: размер окна (у нас 3)
-template <int Kbits, int Jbits, int KERN_SZ, int OUT_Y, int OUT_X, int PIC_Z, int OUT_Z, int STRIDE=1, bool BETA=false >
+template <int Kbits, int Jbits, PreProcessType Prefunc, int KERN_SZ, int OUT_Y, int OUT_X, int PIC_Z, int OUT_Z, int STRIDE=1 >
 __attribute__ ((section(".text_int_X")))    //  does not work in GCC!
 void nmppDnn_Convolution_Fixp_Swap_2 (
         long long pSrc[] [ (OUT_Y-1)*STRIDE +KERN_SZ ] [ ( (OUT_X-1)*STRIDE +KERN_SZ ) /(64/Jbits) ],    //  вход
@@ -79,28 +103,8 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
             for ( jj=0; jj<JJ; jj++ ){
 
                 long long* cc = &(((long long*)nmC)[i*ldc +jj]);
-                if ( BETA ){
-                    kk=0;
-                    asm (   "rep %4 data = [%1++%2] with data;  "
-                                :   "+g"(dummy_order), "+RA0" (cc)
-                                : "RG0"(ldc*2), "m"(*cc), "i"(IStep) );
-                }
-                else{
-                    kk=1;
-                    NMVec<Kbits> nmA=   (NMVec<Kbits>)  &pKernel [0] [0] [0] [0];
-                    NMVec<Jbits> nmB=   (NMVec<Jbits>)  &pSrc [0] [y*STRIDE] [0 ];
-                    long long* bb = &(((long long*)nmB)[jj*STRIDE]);
 
-                    asm (   "rep %3 wfifo = [%0++%2], ftw;      "
-                                : "+RA1" (bb),   "+g"(dummy_order)
-                                : "RG1"(ldb*2), "i"(KStep), "m"(*bb) );
-
-                    long long* aa = &(((long long*)nmA)[i*lda]);
-                    asm (   "wtw;                               \n\t"
-                            "rep %4 data = [%0++%2] with vsum , data, 0;    "
-                                : "+RA2" (aa),   "+g"(dummy_order)
-                                : "RG2"(lda*2), "m"(*aa), "i"(IStep) );
-                }
+                Prefunc( IStep, dummy_order, cc, ldc );
 
                 int ky,kx;
                 for ( ky=0; ky<KERN_SZ; ky++ ){
@@ -110,7 +114,7 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
 
 
 
-                        for ( ; kk<KK; kk++ ){
+                        for (kk=0 ; kk<KK; kk++ ){
                             k= kk* KStep;
 
                             long long* bb = &(((long long*)nmB)[k*ldb +jj*STRIDE]);
@@ -126,14 +130,11 @@ void nmppDnn_Convolution_Fixp_Swap_2 (
                                         : "RG2"(lda*2), "m"(*aa), "i"(IStep) );
                         }
 
-                        kk=0;
-
-
                     }
                 }
 
                 cc = &(((long long*)nmC)[i*ldc +jj]);
-                ppRELU( dummy_order );
+                postRELU( IStep, dummy_order );
                 asm (   "rep %4 [%2++%3] = afifo;   "
                             : "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
                                 : "RG0"(ldc*2), "i"(IStep) );
