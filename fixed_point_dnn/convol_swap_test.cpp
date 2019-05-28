@@ -9,21 +9,22 @@ extern "C" int printf( const char* format,...);
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
 //	В этой версии для перемножения матриц используется nmppmMul_mm из nmpp
-#include "convol_swap.h"
+#include "convol_swap_border.h"
 //
 #define Kbits 2
 #define Jbits 64
 //
 
 //
-const int Xout= 2;
-const int Yout= 2;
-const int Zin= 64;	// *4
+const int Xout= 8;
+const int Yout= 8;
+const int Zin= 32;	// *4
 //
-const int Zout = 64;	// *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 8;	// *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
+const int Border = 0;
 ////const int Xin= 40;
 ////const int Yin= 3;
 ////const int Zin= 16;
@@ -33,8 +34,8 @@ const int Stride = 1;
 ////const int Ky   = 1;             //  окно по вертикали
 //const int Ksz  = Kx * Ky;       //  размер ядра (K)
 //
-const int Xin= (Xout-1)*Stride +Kx;
-const int Yin= (Yout-1)*Stride +Ky;
+const int Xin= (Xout-1)*Stride +Kx -2*Border;
+const int Yin= (Yout-1)*Stride +Ky -2*Border;
 //
 const int ZZin  = 1+ (Zin-1) /(64/Kbits);   //  округление вверх
 //const int ZZout = Zout/(64/Jbits);
@@ -62,29 +63,29 @@ int myRnd();
 __attribute__ ((section(".text_int")))
 int convol_swap_test()
 {
-	int x, y, z;
 
+    //  PARAMETERS LOGGING
+    printf(": Kbits: %d  Jbits: %d Xout: %d Yout: %d Zin: %d Zout: %d Kx: %d Stride: %d Border: %d\n",
+             Kbits,     Jbits,    Xout,    Yout,    Zin,    Zout,    Kx,    Stride,      Border );
+    printf("==%p==%p==%p==\n", pic_sw, kern_sw, res_sw );
+
+
+	int x, y, z;
+	//  PICTURE INITIALIZATION
 	for ( x=0; x<Xin; x++ ){
 		for ( y=0; y<Yin; y++ ){
 			for ( z=0; z<Zin; z++ ){
-//				nmppsPut< Kbits > ( ( NMVec< Kbits > )&(pic[y][x][0]), z, ( NMValue< Kbits > )((x == y) * z ) );
-//				nmppsPut< Kbits > ( ( NMVec< Kbits > )&(pic_sw[y][x][0]), z, ( NMValue< Kbits > )( myRnd() ) );
 				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(pic_sw[z][y][0]), x, ( NMValue< Jbits > )( myRnd() ) );
 			}
 		}
 	}
 
-    printf(": Kbits: %d  Jbits: %d Xout: %d Yout: %d Zin: %d Zout: %d Kx: %d Stride: %d\n",
-             Kbits,     Jbits,    Xout,    Yout,    Zin,    Zout,    Kx,    Stride );
-    printf("==%p==%p==%p==\n", pic_sw, kern_sw, res_sw );
-
+    //  KERNEL INITIALIZATION
 	int z2;
 	for ( x=0; x<Kx; x++ ){
 		for ( y=0; y<Ky; y++ ){
             for ( z2=0; z2<Zout; z2++ ){
                 for ( z=0; z<Zin; z++ ){
-//					nmppsPut< Jbits > ( ( NMVec< Jbits > )&(kern_sw[y][x][z2][0]), z, ( NMValue< Jbits > )( myRnd() ) );
-//					nmppsPut< Jbits > ( ( NMVec< Jbits > )&(kern[y][x][z2][0]), z, ( NMValue< Jbits > )( x==0 && y==0 && z==z2 ) );
 					nmppsPut< Kbits > ( ( NMVec< Kbits > )&(kern_sw[z2][y][x][0]), z, ( NMValue< Kbits > )( myRnd() ) );
 				}
                 for ( ; z<32; z++ ){
@@ -95,6 +96,7 @@ int convol_swap_test()
 		}
 	}
 
+    //  RESULT (ADDEND) INITIALIZATION
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<Zout; z++ ){
@@ -103,6 +105,7 @@ int convol_swap_test()
 		}
 	}
 
+    //  ETALON EVALUATION
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<Zout; z++ ){
@@ -114,7 +117,12 @@ int convol_swap_test()
 							NMValue< Jbits > aVal;
 							NMValue< Kbits > bVal;
 
-							nmppsGetVal< Jbits > ( ( NMVec< Jbits > )&(pic_sw[zz][y*Stride+yy]), x*Stride+xx, &aVal );
+                            int y_b= y*Stride+yy - Border;
+                            int x_b= x*Stride+xx - Border;
+							if ( y_b <0 || y_b>=Yin || x_b <0 || x_b>=Xin )
+							    continue;
+
+							nmppsGetVal< Jbits > ( ( NMVec< Jbits > )&(pic_sw[zz][y_b]), x_b, &aVal );
 
 							nmppsGetVal< Kbits > ( ( NMVec< Kbits > )&(kern_sw[z][yy][xx][0]), zz, &bVal );
 
@@ -135,7 +143,10 @@ int convol_swap_test()
 	int t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
-	nmppDnn_Convolution_Fixp_Swap_2<Kbits, Jbits, preADD_OLD_C, Kx, Yout, Xout, Zin, Zout, Stride >( pic_sw, kern_sw, res_sw );
+	/////////////////////
+	//  MAIN CALL
+    /////////////////////
+	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preADD_OLD_C, Kx, Yout, Xout, Zin, Zout, Stride, Border >( pic_sw, kern_sw, res_sw );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
@@ -150,7 +161,8 @@ int convol_swap_test()
     		return -4;
     }
 
-	for ( z=0; z<4; z++ ){
+    //  SHOW SOME RESULT
+    for ( z=0; z<4 && z<Zout; z++ ){
 		for ( x=0; x<8 && x<Xout; x++ ){
 			for ( y=0; y<Yout; y++ ){
 				printf( " %16llx ", et_sw[z][y][x] );
@@ -170,11 +182,13 @@ int convol_swap_test()
 	x=0;
 	y=0;
 	z=0;
+    //  CHECK RESULT
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
-			for ( z=0; z<16; z++ ){
+			for ( z=0; z<16 && z<Zout; z++ ){
 				if ( res_sw[z][y][x] != et_sw[z][y][x] ){
-					printf( ": ERR  y: %d x: %d z: %d res: %lld et: %lld\n", y, x, z, res_sw[z][y][x], et_sw[z][y][x] );
+					if ( ret == 0 )
+					    printf( ": ERR  y: %d x: %d z: %d res: %lld et: %lld\n", y, x, z, res_sw[z][y][x], et_sw[z][y][x] );
 					ret= -1;
 				}
 			}
