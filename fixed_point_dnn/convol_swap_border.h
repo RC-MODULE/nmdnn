@@ -49,24 +49,24 @@ template <  int Kbits,
             int Jbits,
             PreProcessType Prefunc,
             int KERN_SZ,
-            int OUT_Y,
-            int OUT_X,
+            int PIC_Y,
+            int PIC_X,
             int PIC_Z,
             int OUT_Z,
             int STRIDE,
-            int BORDER >
+            bool PAD>
 __attribute__ ((section(".text_int_X")))    //  does not work in GCC!
 void nmppDnn_Convolution_Fixp_Swap_Border (
         long long pSrc      []
-                              [ (OUT_Y-1)*STRIDE +KERN_SZ -BORDER*2 ]
-                                [ ( (OUT_X-1)*STRIDE +KERN_SZ -BORDER*2 ) /(64/Jbits) ],    //  вход
+                              [ PIC_Y ]
+                                [ PIC_X /(64/Jbits) ],    //  вход
         long long pKernel   []
                               [KERN_SZ]
                                 [KERN_SZ]
                                   [ 1+ (PIC_Z-1) /(64/Kbits) ],// вход
         long long pDstC     []
-                              [ OUT_Y ]
-                                [ OUT_X /(64/Jbits) ]   //  выход
+                              [ PAD ? PIC_Y : (PIC_Y - KERN_SZ)/STRIDE +1 ]
+                                [ (PAD ? PIC_X : (PIC_X - KERN_SZ)/STRIDE +1) /(64/Jbits) ]   //  выход
          )
 {
 
@@ -86,9 +86,13 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
 
 
 
-    const int PIC_X= (OUT_X-1)*STRIDE +KERN_SZ -BORDER*2;
-    const int PIC_Y= (OUT_Y-1)*STRIDE +KERN_SZ -BORDER*2;
+//    const int PIC_X= (OUT_X-1)*STRIDE +KERN_SZ -BORDER*2;
+//    const int PIC_Y= (OUT_Y-1)*STRIDE +KERN_SZ -BORDER*2;
 
+    const int OUT_X= PAD ? PIC_X : (PIC_X - KERN_SZ)/STRIDE +1;
+    const int OUT_Y= PAD ? PIC_Y : (PIC_Y - KERN_SZ)/STRIDE +1;
+
+    const int BORDER = PAD ? (KERN_SZ - 1)/2 : 0;
 
     const int I= OUT_Z;
     const int K= (1+ (PIC_Z-1) /(64/Kbits)) *(64/Kbits);

@@ -16,15 +16,15 @@ extern "C" int printf( const char* format,...);
 //
 
 //
-const int Xout= 8;
-const int Yout= 8;
-const int Zin= 32;	// *4
+const int Xout= 2;
+const int Yout= 2;
+const int Zin= 64;	// *4
 //
-const int Zout = 8;	// *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 64;	// *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
-const int Border = 0;
+const bool Border = true;
 ////const int Xin= 40;
 ////const int Yin= 3;
 ////const int Zin= 16;
@@ -146,7 +146,7 @@ int convol_swap_test()
 	/////////////////////
 	//  MAIN CALL
     /////////////////////
-	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preADD_OLD_C, Kx, Yout, Xout, Zin, Zout, Stride, Border >( pic_sw, kern_sw, res_sw );
+	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preADD_OLD_C, Kx, Yin, Xin, Zin, Zout, Stride, Border >( pic_sw, kern_sw, res_sw );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
