@@ -2,6 +2,9 @@
 #include "simple_wraps.h"
 #include "nbsb_builder.h"
 
+extern long long bias[Zout];
+extern long long bias_mull[Zout];
+
 static inline int max(int x, int y){  return x>y ? x:y;}
 
 static inline void postID( const int rep, int& dummy_order )
@@ -12,6 +15,20 @@ static inline void postRELU( const int rep, int& dummy_order )
 {
     asm (   "rep %1  with not activate afifo and afifo;   "
                             : "+g"(dummy_order)
+                            : "i"(rep) );
+}
+
+static inline void postPROC( const int rep, int& dummy_order  )
+{
+    long long* aPtr = bias;
+    long long* mPtr = bias_mull;
+    asm (   "sir = 0x00000000;                              \n\t"   //  nmc4
+            "sb  = sir;                               \n\t"
+            "rep 1 wfifo = [%1++], ftw;           \n\t"
+            "wtw;                               \n\t"
+            "rep %3 data = [%0++] with vsum , afifo, data;     \n\t"
+            "rep %3  with not activate afifo and afifo;   "
+                            : "+a"(aPtr), "+a"(mPtr), "+g"(dummy_order)
                             : "i"(rep) );
 }
 
@@ -78,11 +95,8 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
             "f1crl = sir;                             \n\t"
             "sir = 0x80000000;                              \n\t"   //  nmc4
             "f1crh = sir;                             \n\t"
-            "sir = %2;                              \n\t"
-            "sb  = sir; "
               : "=g"(dummy_order)
-              : "i"(nb_from_bitWidth(Jbits)),
-                "i"(sb_from_bitWidth(Kbits)) );
+              : "i"(nb_from_bitWidth(Jbits)) );
 
 
 
@@ -127,6 +141,10 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
         for ( ii=0; ii<II; ii++ ){  //  OUT_Z
             i= ii* IStep;
             for ( jj=0; jj<JJ; jj++ ){  //  OUT_X
+                asm (   "sir = %1;                              \n\t"
+                        "sb  = sir; "
+                          : "+g"(dummy_order)
+                          : "i"(sb_from_bitWidth(Kbits)) );
 
                 long long* cc = &(((long long*)nmC)[i*ldc +jj]);
 
@@ -158,7 +176,7 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
                 }
 
                 cc = &(((long long*)nmC)[i*ldc +jj]);
-                postRELU( IStep, dummy_order );
+                postPROC( IStep, dummy_order );
                 asm (   "rep %4 [%2++%3] = afifo;   "
                             : "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
                                 : "RG0"(ldc*2), "i"(IStep) );

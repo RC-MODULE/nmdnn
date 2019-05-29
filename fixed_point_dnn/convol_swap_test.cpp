@@ -9,6 +9,7 @@ extern "C" int printf( const char* format,...);
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
 //	В этой версии для перемножения матриц используется nmppmMul_mm из nmpp
+const int Zout = 128;   // *2            //  кол-во одновременно вычисляемых ядер (J)
 #include "convol_swap_border.h"
 //
 #define Kbits 2
@@ -18,13 +19,12 @@ extern "C" int printf( const char* format,...);
 //
 const int Xout= 2;
 const int Yout= 2;
-const int Zin= 64;	// *4
+const int Zin= 32;	// *4
 //
-const int Zout = 64;	// *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
-const bool Border = true;
+const bool Border = false;
 ////const int Xin= 40;
 ////const int Yin= 3;
 ////const int Zin= 16;
@@ -52,6 +52,10 @@ static long long guard3[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 long long et_sw [Zout] [Yout ] [Xout];
 static long long guard4[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 
+//  biases
+__attribute__ ((section(".data_imu1"))) long long bias[Zout];
+__attribute__ ((section(".data_imu2"))) long long bias_mull[Zout];
+
 
 int myRnd();
 //{
@@ -66,7 +70,7 @@ int convol_swap_test()
 
     //  PARAMETERS LOGGING
     printf(": Kbits: %d  Jbits: %d Xout: %d Yout: %d Zin: %d Zout: %d Kx: %d Stride: %d Border: %d\n",
-             Kbits,     Jbits,    Xout,    Yout,    Zin,    Zout,    Kx,    Stride,      Border );
+              Kbits,     Jbits,    Xout,    Yout,    Zin,    Zout,    Kx,    Stride,    Border );
     printf("==%p==%p==%p==\n", pic_sw, kern_sw, res_sw );
 
 
@@ -97,13 +101,19 @@ int convol_swap_test()
 	}
 
     //  RESULT (ADDEND) INITIALIZATION
-	for ( x=0; x<Xout; x++ ){
-		for ( y=0; y<Yout; y++ ){
-			for ( z=0; z<Zout; z++ ){
-				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(res_sw[z][y][0]), x, ( NMValue< Jbits > )0x100ll );
-			}
-		}
-	}
+    for ( x=0; x<Xout; x++ ){
+        for ( y=0; y<Yout; y++ ){
+            for ( z=0; z<Zout; z++ ){
+                nmppsPut< Jbits > ( ( NMVec< Jbits > )&(res_sw[z][y][0]), x, ( NMValue< Jbits > )0x100ll );
+            }
+        }
+    }
+
+    //  BIAS SETUP
+    for ( z=0; z<Zout; z++ ){
+        bias_mull[z] = 2;
+        bias     [z] = 1;
+    }
 
     //  ETALON EVALUATION
 	for ( x=0; x<Xout; x++ ){
@@ -135,7 +145,7 @@ int convol_swap_test()
 				}
 	            if ( ce<0 )
 	                ce = 0;
-				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(et_sw[z][y][0]), x, ce );
+				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(et_sw[z][y][0]), x, ce * bias_mull[z] + bias[z] );
 			}
 		}
 	}
