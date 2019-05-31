@@ -71,7 +71,8 @@ template <  int Kbits,
             int PIC_Z,
             int OUT_Z,
             int STRIDE,
-            bool PAD>
+            bool PAD,
+            int SHIFT>
 __attribute__ ((section(".text_int_X")))    //  does not work in GCC!
 void nmppDnn_Convolution_Fixp_Swap_Border (
         long long pSrc      []
@@ -91,12 +92,15 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
 
     asm (   "sir = %1;                              \n\t"   //  nmc4
             "nb1 = sir;                             \n\t"
+            "sir = %2;                              \n\t"   //  nmc4
+            "sb = sir;                             \n\t"
             "sir = 0x0;                              \n\t"   //  nmc4
             "f1crl = sir;                             \n\t"
             "sir = 0x80000000;                              \n\t"   //  nmc4
             "f1crh = sir;                             \n\t"
               : "=g"(dummy_order)
-              : "i"(nb_from_bitWidth(Jbits)) );
+              : "i"(nb_from_bitWidth(Jbits)),
+                "i"(sb_from_bitWidth(Kbits)));
 
 
 
@@ -117,7 +121,8 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
     const int _ldc= OUT_X *OUT_Y;
 
 
-    const int IStep = OUT_Z % 32 == 0 ? 32 : OUT_Z % 32;
+    //  ((OUT_Z ^ (OUT_Z-1)) +1)/2 - максимальная степень двойки, на которую делится OUT_Z
+    const int IStep = OUT_Z % 32 == 0 ? 32 : ((OUT_Z ^ (OUT_Z-1)) +1)/2;
     const int II = I/IStep;
     const int JStep = 64/Jbits;
     const int JJ = J/JStep;
@@ -131,7 +136,7 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
 
     assert(Jbits==64);
 
-
+    //  CONVOLUTION
     int y;
     for ( y=0; y< OUT_Y; y++ ){
         NMVec<Jbits> nmC=   (NMVec<Jbits>)  &pDstC [0] [y] [0];
@@ -141,10 +146,6 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
         for ( ii=0; ii<II; ii++ ){  //  OUT_Z
             i= ii* IStep;
             for ( jj=0; jj<JJ; jj++ ){  //  OUT_X
-                asm (   "sir = %1;                              \n\t"
-                        "sb  = sir; "
-                          : "+g"(dummy_order)
-                          : "i"(sb_from_bitWidth(Kbits)) );
 
                 long long* cc = &(((long long*)nmC)[i*ldc +jj]);
 
@@ -176,11 +177,50 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
                 }
 
                 cc = &(((long long*)nmC)[i*ldc +jj]);
-                postPROC( IStep, dummy_order );
+                postID( IStep, dummy_order );
                 asm (   "rep %4 [%2++%3] = afifo;   "
                             : "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
                                 : "RG0"(ldc*2), "i"(IStep) );
             }
+        }
+    }
+    asm (   "sir = 0x00000000;                              \n\t"   //  nmc4
+            "sbh  = sir;                               \n\t"
+            "sir = %1;                              \n\t"   //  nmc4
+            "sbl  = sir;                               \n\t"
+                                        : "+g"(dummy_order)
+                                        : "i"(0x00000002 << SHIFT) );
+    //  POSTPROCESSING
+    int z;
+    long long* aPtr = &bias[0];
+    long long* mPtr = &bias_mull[0];
+    long long  zero = 0;
+    for ( z=0; z< OUT_Z; z++ ){
+        asm (   "rep 1 wfifo = [%5];           \n\t"
+                "rep 1 wfifo = [%0++], ftw;           \n\t"
+                "vr = [%1++];                                 \n\t"
+                "wtw;                                 \n\t"
+                                : "+a"(mPtr), "+a"(aPtr), "+g"(dummy_order)
+                                : "m"(*mPtr), "m"(*aPtr), "a"(&zero), "m"(zero) );
+        int xy;
+        long long* cc = &(((long long*)pDstC)[z*ldc]);
+        long long* cc2 = cc;
+        for ( xy=0; xy< ldc-31; xy+=32 ){
+            asm (   "rep 32 data = [%0++] with vsum , data, vr;     \n\t"
+                    "rep 32  with not activate afifo and afifo;   "
+                                    : "+a"(cc), "+g"(dummy_order)
+                                    : "m"(*cc) );
+            asm (   "rep 32 [%0++] = afifo;     \n\t"
+                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*cc2) );
+        }
+        if ( ldc % 32 !=0 ){
+            asm (   "rep %3 data = [%0++] with vsum , data, vr;     \n\t"
+                    "rep %3  with not activate afifo and afifo;   "
+                                    : "+a"(cc), "+g"(dummy_order)
+                                    : "m"(*cc), "i"(ldc % 32) );
+            asm (   "rep %3 [%0++] = afifo;     \n\t"
+                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*cc2)
+                                    : "i"(ldc % 32));
         }
     }
 }

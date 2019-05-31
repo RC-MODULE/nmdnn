@@ -9,7 +9,7 @@ extern "C" int printf( const char* format,...);
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
 //	В этой версии для перемножения матриц используется nmppmMul_mm из nmpp
-const int Zout = 128;   // *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 4;   // *2            //  кол-во одновременно вычисляемых ядер (J)
 #include "convol_swap_border.h"
 //
 #define Kbits 2
@@ -17,14 +17,15 @@ const int Zout = 128;   // *2            //  кол-во одновременно вычисляемых яде
 //
 
 //
-const int Xout= 2;
+const int Xout= 3;
 const int Yout= 2;
-const int Zin= 32;	// *4
+const int Zin= 4;	// *4
 //
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
 const bool Border = false;
+const int Shift = 20;
 ////const int Xin= 40;
 ////const int Yin= 3;
 ////const int Zin= 16;
@@ -55,7 +56,6 @@ static long long guard4[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 //  biases
 __attribute__ ((section(".data_imu1"))) long long bias[Zout];
 __attribute__ ((section(".data_imu2"))) long long bias_mull[Zout];
-
 
 int myRnd();
 //{
@@ -111,8 +111,8 @@ int convol_swap_test()
 
     //  BIAS SETUP
     for ( z=0; z<Zout; z++ ){
-        bias_mull[z] = 2;
-        bias     [z] = 1;
+        bias_mull[z] = 0xffff & myRnd();
+        bias     [z] = 0xffff & myRnd();
     }
 
     //  ETALON EVALUATION
@@ -143,9 +143,10 @@ int convol_swap_test()
 	        			}
 	                }
 				}
+	            ce = ((ce >> Shift ) * bias_mull[z]) + bias[z];
 	            if ( ce<0 )
 	                ce = 0;
-				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(et_sw[z][y][0]), x, ce * bias_mull[z] + bias[z] );
+				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(et_sw[z][y][0]), x, ce );
 			}
 		}
 	}
@@ -156,7 +157,7 @@ int convol_swap_test()
 	/////////////////////
 	//  MAIN CALL
     /////////////////////
-	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preADD_OLD_C, Kx, Yin, Xin, Zin, Zout, Stride, Border >( pic_sw, kern_sw, res_sw );
+	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preADD_OLD_C, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
