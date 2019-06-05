@@ -5,6 +5,7 @@
 #define min(x,y) ((x)>(y) ? (y):(x))
 
 #include "maxpool_fixp.h"
+#include "maxpool_fixp_plain.h"
 #include "simple_wraps.h"
 
 
@@ -120,7 +121,7 @@ int maxpool_test()
     //nmppsRamp<BITS> ( AAA, 1, 2, Ax*Ay*Z );
     //nmppsClipPowC<BITS> ( AAA, BITS-8, AAA, Ax*Ay*Z);
 
-	int t1, t2;
+	int  t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
 	nmppDnn_MaxPool_Fixp<BITS,W_x,2> ( (NMVecPad<BITS>) AAA, (NMVecPad<BITS>) CCC, Z, Ax, Ay );
@@ -184,5 +185,4 @@ int maxpool_test()
     }
 	return t2-t1;
 }
-
 

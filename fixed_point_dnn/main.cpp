@@ -7,6 +7,7 @@
 //int EnterHardMode::inst=0;
 int mmul_test();
 int maxpool_test();
+int maxpool_test2();
 int convol_test();
 int convol_swap_test();
 
@@ -19,8 +20,8 @@ int main()
 					"[40000806h] = gr7;    	\n\t"	//	timer setup 4
 					: : : "gr7" );
 
-	//return maxpool_test();
+	return maxpool_test2();
 	//return mmul_test();
-	return convol_swap_test();
+	//return convol_swap_test();
 }
 
