@@ -73,7 +73,7 @@ template <  int Kbits,
             int STRIDE,
             bool PAD,
             int SHIFT>
-__attribute__ ((section(".text_int_X")))    //  does not work in GCC!
+__attribute__ ((section(".text_int_X")))
 void nmppDnn_Convolution_Fixp_Swap_Border (
         long long pSrc      []
                               [ PIC_Y ]

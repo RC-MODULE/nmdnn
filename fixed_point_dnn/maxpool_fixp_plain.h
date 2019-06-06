@@ -44,7 +44,7 @@ void maxPoolEnd( long long* cc, int stride, int& dummy_order )
 //	KERN_SZ: размер окна (у нас 3)
 //	KERN_STRIDE: коэфф. сжатия окна по каждому направлению (обычно 2)
 template <int KERN_SZ, int KERN_STRIDE, int Z_SZ>
-//__attribute__ ((section(".text_int")))	//	does not work in GCC!
+__attribute__ ((section(".text_int_X")))
 void nmppDnn_MaxPool_Fixp_plain (
         long long* pSrcA,	//	вход
 		long long* pDstC,	//	выход

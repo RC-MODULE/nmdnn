@@ -14,13 +14,13 @@ namespace{
 
 const int BITS = 64;		//	Параметр:  битов на сигнал
 
-const int Ax = 7;           //  Параметры:      Входная геометрия x,y
-const int Ay = 7;
+const int Ax = 9;           //  Параметры:      Входная геометрия x,y
+const int Ay = 9;
 const int Kx = 3;           //  Параметры:      Входная геометрия x,y
 const int Ky = 3;
 const int Z  = 64;			//	Параметр:  		Количество каналов
 const int ZZ = Z/(64/BITS);	//	Вычисляется:	должно делиться нацело!
-const int Str_x = 1;		//	Параметр:  Страйды
+const int Str_x = 2;		//	Параметр:  Страйды
 const int Str_y = Str_x;
 
 const int Cx = (Ax-Kx)/Str_x +1;	//	Вычисляется:	Выходная геометрия x,y
@@ -43,6 +43,7 @@ extern "C" void _exit(int);
 
 int myRnd();
 
+__attribute__ ((section(".text_int")))
 int maxpool_test2()
 {
     int x,y,z;
