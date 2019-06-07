@@ -14,27 +14,27 @@ namespace{
 
 const int BITS = 64;		//	Параметр:  битов на сигнал
 
-const int Ax = 9;           //  Параметры:      Входная геометрия x,y
-const int Ay = 9;
+const int Ax = 7;           //  Параметры:      Входная геометрия x,y
+const int Ay = 7;
 const int Kx = 3;           //  Параметры:      Входная геометрия x,y
 const int Ky = 3;
 const int Z  = 64;			//	Параметр:  		Количество каналов
 const int ZZ = Z/(64/BITS);	//	Вычисляется:	должно делиться нацело!
-const int Str_x = 2;		//	Параметр:  Страйды
+const int Str_x = 1;		//	Параметр:  Страйды
 const int Str_y = Str_x;
 
 const int Cx = (Ax-Kx)/Str_x +1;	//	Вычисляется:	Выходная геометрия x,y
 const int Cy = (Ay-Ky)/Str_y +1;
 
 
-__attribute__ ((section(".data_imu1"))) long long AAAA[ZZ][Ay][Ax];
 const long long dog = 0x6ABc6ABc6ABc6ABcull;
+__attribute__ ((section(".data_imu0"))) long long _AAAA[  ZZ  *Ay  *Ax  ];
 __attribute__ ((section(".data_imu2"))) long long guard1[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 //long long AAAC[Ay][Cx][ZZ];
-__attribute__ ((section(".data_imu2"))) long long CCCC[ZZ][Cy][Cx];
+__attribute__ ((section(".data_imu2"))) long long _CCCC[  ZZ  *Cy  *Cx  ];
 __attribute__ ((section(".data_imu2"))) long long guard2[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 long long guard4[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
-long long CCCC2[ZZ][Cy][Cx];
+long long _CCCC2[  ZZ  *Cy  *Cx  ];
 long long guard3[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
 
 };
@@ -46,6 +46,9 @@ int myRnd();
 __attribute__ ((section(".text_int")))
 int maxpool_test2()
 {
+    long long (*AAAA )[Ay][Ax]= (long long (*)[Ay][Ax]) _AAAA;
+    long long (*CCCC )[Cy][Cx]= (long long (*)[Cy][Cx]) _CCCC;
+    long long (*CCCC2)[Cy][Cx]= (long long (*)[Cy][Cx]) _CCCC2;
     int x,y,z;
 
     for ( x=0; x<Cx; x++ ){
@@ -82,7 +85,7 @@ int maxpool_test2()
 	int  t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
-	nmppDnn_MaxPool_Fixp_plain<Ky, Str_x, Z> ( (long long*)AAAA, (long long*)CCCC, Ax, Ay );
+	nmppDnn_MaxPool_Fixp_plain<Ky, Str_x, Z> ( _AAAA, _CCCC, Ax, Ay );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
@@ -106,7 +109,7 @@ int maxpool_test2()
             }
             printf("\n:");
     }
-    printf("============================\n:");
+    printf("========================= %p ===\n:", &AAAA[0][0][0] );
     for ( x=0; x<5; x++ ){
         for ( y=0; y<5; y++ ){
                 //int cInd = y*Z*Cx     + x*Z + z;

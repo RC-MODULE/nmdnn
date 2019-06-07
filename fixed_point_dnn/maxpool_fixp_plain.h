@@ -23,8 +23,8 @@ maxPoolAcc( long long* cc, int stride, int& dummy_order )
     asm (   "rep %6  data = [%0++%3] with afifo - data;     \n\t"
             "rep %6  with not activate afifo and afifo;     \n\t"
             "rep %6  data = [%1++%4] with data + afifo;     \n\t"
-                            : "+RA3"(cc2), "+RA4"(cc), "+g"(dummy_order)
-                            : "RG3"(stride*2), "RG4"(stride*2), "m"(*cc2), "i"(Z) );
+                            : "+RA3"(cc2), "+RA2"(cc), "+g"(dummy_order)
+                            : "RG3"(stride*2), "RG2"(stride*2), "m"(*cc2), "i"(Z) );
 
 }
 
