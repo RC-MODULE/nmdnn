@@ -11,7 +11,7 @@ maxPoolBegin( long long* cc, int stride, int& dummy_order )
             "wtw;     \n\t"
             "rep %4  data = [%0++%2] with data;     \n\t"
                             : "+RA2"(cc), "=g"(dummy_order)
-                            : "RG2"(stride*2), "m"(*cc), "i"(Z) );
+                            : "RG2"(stride*2), "m"(*(const long long (*)[Z*stride]) cc), "i"(Z) );
 }
 
 template <int Z>  void
@@ -24,7 +24,7 @@ maxPoolAcc( long long* cc, int stride, int& dummy_order )
             "rep %6  with not activate afifo and afifo;     \n\t"
             "rep %6  data = [%1++%4] with data + afifo;     \n\t"
                             : "+RA3"(cc2), "+RA2"(cc), "+g"(dummy_order)
-                            : "RG3"(stride*2), "RG2"(stride*2), "m"(*cc2), "i"(Z) );
+                            : "RG3"(stride*2), "RG2"(stride*2), "m"(*(const long long (*)[Z*stride]) cc), "i"(Z) );
 
 }
 
@@ -32,7 +32,7 @@ template <int Z>
 void maxPoolEnd( long long* cc, int stride, int& dummy_order )
 {
     asm (   "rep %4  [%0++%2] = afifo;     \n\t"
-                            : "+RA5"(cc), "=m"(*cc)
+                            : "+RA5"(cc), "=m"(*(long long (*)[Z*stride]) cc)
                             : "RG5"(stride*2),  "g"(dummy_order), "i"(Z) );
 }
 
