@@ -68,6 +68,8 @@ void nmppDnn_MaxPool_Fixp_plain (
 	            long long* pa= pSrcA +y*KERN_STRIDE*srcPixelsX +x*KERN_STRIDE +z*strideIn;
 
                 int dependencyDummy;
+                asm (   ""  : "=g"(dependencyDummy));
+
 	            int ky;
 	            for ( ky=0; ky<KERN_SZ; ky++ ){
 	                int kx;

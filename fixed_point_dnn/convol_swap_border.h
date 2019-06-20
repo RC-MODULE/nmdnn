@@ -29,7 +29,7 @@ static inline void postPROC( const int rep, int& dummy_order  )
             "rep %3 data = [%0++] with vsum , afifo, data;     \n\t"
             "rep %3  with not activate afifo and afifo;   "
                             : "+a"(aPtr), "+a"(mPtr), "+g"(dummy_order)
-                            : "i"(rep) );
+                            : "i"(rep), "m"(*(const long long (*)[rep]) aPtr), "m"(*mPtr) );
 }
 
 static inline void preZERO( const int rep, int& dummy_order, long long* cc, const int ldc )
@@ -43,14 +43,14 @@ static inline void preADD_OLD_C( const int rep, int& dummy_order, long long* cc,
 {
     asm (   "rep %4 data = [%1++%2] with data;  "
                 :   "+g"(dummy_order), "+RA0" (cc)
-                : "RG0"(ldc*2), "m"(*cc), "i"(rep) );
+                : "RG0"(ldc*2), "m"(*(const long long (*)[rep*ldc]) cc), "i"(rep) );
 }
 
 static inline void preBIAS_X( long long* ptr, const int rep, int& dummy_order )
 {
     asm (   "rep %2 data= [%1++] with data;   "
                             : "+g"(dummy_order), "+a"(ptr)
-                            : "i"(rep), "m"(*ptr) );
+                            : "i"(rep), "m"(*(const long long (*)[rep]) ptr) );
 }
 
 typedef void (*PreProcessType)(const int rep, int& dummy_order, long long* cc, const int ldc);
@@ -164,13 +164,13 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
 
                             asm (   "rep %3 wfifo = [%0++%2], ftw;      "
                                         : "+RA1" (bb),   "+g"(dummy_order)
-                                        : "RG1"(ldb*2), "i"(KStep), "m"(*bb) );
+                                        : "RG1"(ldb*2), "i"(KStep), "m"(*(const long long (*)[KStep*ldb]) bb) );
 
                             long long* aa = &(((long long*)nmA)[i*lda +kk]);
                             asm (   "wtw;                               \n\t"
                                     "rep %4 data = [%0++%2] with vsum , data, afifo;    "
                                         : "+RA2" (aa),   "+g"(dummy_order)
-                                        : "RG2"(lda*2), "m"(*aa), "i"(IStep) );
+                                        : "RG2"(lda*2), "m"(*(const long long (*)[IStep*lda]) aa), "i"(IStep) );
                         }
 
                     }
@@ -179,7 +179,7 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
                 cc = &(((long long*)nmC)[i*ldc +jj]);
                 postID( IStep, dummy_order );
                 asm (   "rep %4 [%2++%3] = afifo;   "
-                            : "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
+                            : "+g"(dummy_order), "=m"(*(long long (*)[IStep*ldc]) cc), "+RA0" (cc)
                                 : "RG0"(ldc*2), "i"(IStep) );
             }
         }
@@ -209,17 +209,17 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
             asm (   "rep 32 data = [%0++] with vsum , data, vr;     \n\t"
                     "rep 32  with not activate afifo and afifo;   "
                                     : "+a"(cc), "+g"(dummy_order)
-                                    : "m"(*cc) );
+                                    : "m"(*(const long long (*)[32]) cc) );
             asm (   "rep 32 [%0++] = afifo;     \n\t"
-                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*cc2) );
+                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*( long long (*)[32]) cc2) );
         }
         if ( ldc % 32 !=0 ){
             asm (   "rep %3 data = [%0++] with vsum , data, vr;     \n\t"
                     "rep %3  with not activate afifo and afifo;   "
                                     : "+a"(cc), "+g"(dummy_order)
-                                    : "m"(*cc), "i"(ldc % 32) );
+                                    : "m"(*(const long long (*)[ldc % 32]) cc), "i"(ldc % 32) );
             asm (   "rep %3 [%0++] = afifo;     \n\t"
-                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*cc2)
+                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*( long long (*)[ldc % 32]) cc2)
                                     : "i"(ldc % 32));
         }
     }

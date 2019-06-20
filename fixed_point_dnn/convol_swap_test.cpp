@@ -9,7 +9,7 @@ extern "C" int printf( const char* format,...);
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
 //	В этой версии для перемножения матриц используется nmppmMul_mm из nmpp
-const int Zout = 4;   // *2            //  кол-во одновременно вычисляемых ядер (J)
+const int Zout = 32;   // *2            //  кол-во одновременно вычисляемых ядер (J)
 #include "convol_swap_border.h"
 //
 #define Kbits 2
@@ -17,9 +17,9 @@ const int Zout = 4;   // *2            //  кол-во одновременно вычисляемых ядер 
 //
 
 //
-const int Xout= 3;
-const int Yout= 2;
-const int Zin= 4;	// *4
+const int Xout= 16;
+const int Yout= 1;
+const int Zin= 32;	// *4
 //
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
@@ -68,13 +68,13 @@ __attribute__ ((section(".text_int")))
 int convol_swap_test()
 {
 
+	int x, y, z;
     //  PARAMETERS LOGGING
     printf(": Kbits: %d  Jbits: %d Xout: %d Yout: %d Zin: %d Zout: %d Kx: %d Stride: %d Border: %d\n",
               Kbits,     Jbits,    Xout,    Yout,    Zin,    Zout,    Kx,    Stride,    Border );
-    printf("==%p==%p==%p==\n", pic_sw, kern_sw, res_sw );
+    printf("==%p==%p==%p==%p==\n", pic_sw, kern_sw, res_sw, &convol_swap_test );
 
 
-	int x, y, z;
 	//  PICTURE INITIALIZATION
 	for ( x=0; x<Xin; x++ ){
 		for ( y=0; y<Yin; y++ ){
