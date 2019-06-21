@@ -93,7 +93,7 @@ void proto_nmpp_gemm(
 			    kk=0;
 				asm ( 	"rep 32 data = [%1++%2] with data;	"
 							:   "+g"(dummy_order), "+RA0" (cc)
-							: "RG0"(ldc*2), "m"(*cc) );
+							: "RG0"(ldc*2), "m"(*(const long long (*)[ldc*32]) cc) );
 			}
 			else{
                 kk=1;
@@ -101,13 +101,13 @@ void proto_nmpp_gemm(
 
                 asm (   "rep %3 wfifo = [%0++%2], ftw;      "
                             : "+RA1" (bb),   "+g"(dummy_order)
-                            : "RG1"(ldb*2), "i"(KStep), "m"(*bb) );
+                            : "RG1"(ldb*2), "i"(KStep), "m"(*(const long long (*)[ldb*KStep]) bb) );
 
                 long long* aa = &(A[i*lda]);
                 asm (   "wtw;                               \n\t"
                         "rep 32 data = [%0++%2] with vsum , data, 0;    "
                             : "+RA2" (aa),   "+g"(dummy_order)
-                            : "RG2"(lda*2), "m"(*aa) );
+                            : "RG2"(lda*2), "m"(*(const long long (*)[lda*32]) aa) );
             }
 
 			for ( ; kk<KK; kk++ ){
@@ -117,19 +117,19 @@ void proto_nmpp_gemm(
 
 				asm ( 	"rep %3 wfifo = [%0++%2], ftw;		"
 							: "+RA1" (bb),   "+g"(dummy_order)
-							: "RG1"(ldb*2), "i"(KStep), "m"(*bb) );
+							: "RG1"(ldb*2), "i"(KStep), "m"(*(const long long (*)[ldb*KStep]) bb) );
 
 				long long* aa = &(A[i*lda +kk]);
                 asm ( 	"wtw;	                            \n\t"
                         "rep 32 data = [%0++%2] with vsum , data, afifo;	"
                             : "+RA2" (aa),   "+g"(dummy_order)
-                            : "RG2"(lda*2), "m"(*aa) );
+                            : "RG2"(lda*2), "m"(*(const long long (*)[lda*32]) aa) );
 			}
 			cc = &(C[i*ldc +jj]);
 			if ( doPP )
 			    ppfunc( dummy_order );
 			asm ( 	"rep 32 [%2++%3] = afifo;	"
-						: "+g"(dummy_order), "=m"(*cc), "+RA0" (cc)
+						: "+g"(dummy_order), "=m"(*(long long (*)[ldc*32]) cc), "+RA0" (cc)
 							: "RG0"(ldc*2) );
 
 		}

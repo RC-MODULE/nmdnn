@@ -17,11 +17,11 @@ const int Zout = 32;   // *2            //  кол-во одновременно вычисляемых ядер
 //
 
 //
-const int Xout= 16;
-const int Yout= 1;
-const int Zin= 32;	// *4
+const int Xout= 3;
+const int Yout= 3;
+const int Zin= 256;	// *4
 //
-const int Kx   = 3;             //  окно по горизонтали
+const int Kx   = 1;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
 const bool Border = false;
@@ -157,7 +157,7 @@ int convol_swap_test()
 	/////////////////////
 	//  MAIN CALL
     /////////////////////
-	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preADD_OLD_C, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw );
+	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preZERO, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw, bias, bias_mull );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 

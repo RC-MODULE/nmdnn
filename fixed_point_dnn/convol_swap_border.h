@@ -84,7 +84,9 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
                                   [ 1+ (PIC_Z-1) /(64/Kbits) ],// вход
         long long pDstC     []
                               [ PAD ? PIC_Y : (PIC_Y - KERN_SZ)/STRIDE +1 ]
-                                [ (PAD ? PIC_X : (PIC_X - KERN_SZ)/STRIDE +1) /(64/Jbits) ]   //  выход
+                                [ (PAD ? PIC_X : (PIC_X - KERN_SZ)/STRIDE +1) /(64/Jbits) ],   //  выход
+        long long *bias,
+        long long *bias_mull
          )
 {
 
