@@ -4,7 +4,7 @@
 #include "macros.h"
 
 extern "C"
-void LeakyReLU(float *input, float *output, int sz,float alfa)
+void LeakyReLU(const float *input, float *output, int sz,float alfa)
 {
 	if (sz<8){
 		static float bv4[8]={1,1,1,1,1,1,1,1};
@@ -28,7 +28,7 @@ void LeakyReLU(float *input, float *output, int sz,float alfa)
 			 "fpu 1  vreg5= fpu 0  vreg5;  \n\t"
 			 "fpu 2  vreg5= fpu 1  vreg5;  \n\t"
 			 "fpu 3  vreg5= fpu 2  vreg5;  \n\t"
-							: "+a" (cfs)/*, "=g"(rMode)*/ : "m"(*bufScalar) );
+							: "+a" (cfs)/*, "=g"(rMode)*/ : "m"(*(const float (*)[2])bufScalar) );
 
 	sz /=2;
 	while (sz>0){
@@ -68,7 +68,7 @@ void LeakyReLU(float *input, float *output, int sz,float alfa)
 				"fpu 3 rep vlen vreg0= [%0++]; 			\n\t"
 					: "+a" (input)
 					: "g"(len0), "g"(len1)
-					  , "m"(*input) );
+					  , "m"(*(const float (*)[])input) );
 
 		asm ( 	ALL_FPU (".float vreg0 + vreg0, set mask if >;")
 				ALL_FPU_ANTI_MASK
@@ -83,7 +83,7 @@ void LeakyReLU(float *input, float *output, int sz,float alfa)
 				"vlen = %3;                     	\n\t"
 				"fpu 3 rep vlen [%0++] = vreg0; 	\n\t"
 					: "+a" (output)
-					  , "=m"(*output)
+					  , "=m"(*(float (*)[])output)
 					: "g"(len0), "g"(len1)
 					  , "a" (cfs) );
 	}

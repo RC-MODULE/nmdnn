@@ -17,15 +17,15 @@ const int Zout = 32;   // *2            //  кол-во одновременно вычисляемых ядер
 //
 
 //
-const int Xout= 3;
-const int Yout= 3;
-const int Zin= 256;	// *4
+const int Xout= 4;
+const int Yout= 4;
+const int Zin= 64;	// *4
 //
-const int Kx   = 1;             //  окно по горизонтали
+const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
 const bool Border = false;
-const int Shift = 20;
+const int Shift = 20;   //  -1 - не делать постпроцессинг
 ////const int Xin= 40;
 ////const int Yin= 3;
 ////const int Zin= 16;
@@ -173,22 +173,22 @@ int convol_swap_test()
     }
 
     //  SHOW SOME RESULT
-    for ( z=0; z<4 && z<Zout; z++ ){
-		for ( x=0; x<8 && x<Xout; x++ ){
-			for ( y=0; y<Yout; y++ ){
-				printf( " %16llx ", et_sw[z][y][x] );
-			}
-			printf( "-=-" );
-		}
-		printf( "\t\n" );
-		for ( x=0; x<8 && x<Xout ; x++ ){
-			for ( y=0; y<Yout; y++ ){
-				printf( " %16llx ", res_sw[z][y][x] );
-			}
-			printf( "-o-" );
-		}
-		printf( "\t\n" );
-	}
+//    for ( z=0; z<4 && z<Zout; z++ ){
+//		for ( x=0; x<8 && x<Xout; x++ ){
+//			for ( y=0; y<Yout; y++ ){
+//				printf( " %16llx ", et_sw[z][y][x] );
+//			}
+//			printf( "-=-" );
+//		}
+//		printf( "\t\n" );
+//		for ( x=0; x<8 && x<Xout ; x++ ){
+//			for ( y=0; y<Yout; y++ ){
+//				printf( " %16llx ", res_sw[z][y][x] );
+//			}
+//			printf( "-o-" );
+//		}
+//		printf( "\t\n" );
+//	}
 	int ret = 0;
 	x=0;
 	y=0;
@@ -205,7 +205,8 @@ int convol_swap_test()
 			}
 		}
 	}
-    printf( ": TIME: %d = 0x%x\n:\n", t2-t1, t2-t1 );
+	int idealTime= Xout*    Yout*    Zin*    Zout*    Kx*Kx /32;
+    printf( ": TIME: %d = 0x%x IDEAL: %d = 0x%x RATE: %f\n", t2-t1, t2-t1, idealTime, idealTime, idealTime*1.0/(t2-t1) );
 
 	return ret;//C[0][0];res[0][0][34];
 }

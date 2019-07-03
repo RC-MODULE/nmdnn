@@ -38,51 +38,51 @@ void max_pool_2d_a3_s2_byZ(
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
 							: "+a" (pa), "+a" (pa_)
-							: "g"(dz), "m" (*pa) , "m"(*pa_) );
+							: "g"(dz), "m" (*(const float (*)[]) pa ) , "m"(*(const float (*)[]) pa_ ) );
 				//	0,2
 				pa= &(A [y*2  ][x*2+2][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
 							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+							: "m"(*(const float (*)[]) pa ) );
 
 				//	1,0
 				pa= &(A [y*2+1][x*2  ][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
-							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+                            : "+a" (pa), "+a" (pa_)
+                            : "m"(*(const float (*)[]) pa ) );
 				//	1,1
 				pa= &(A [y*2+1][x*2+1][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
-							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+                            : "+a" (pa), "+a" (pa_)
+                            : "m"(*(const float (*)[]) pa ) );
 				//	1,2
 				pa= &(A [y*2+1][x*2+2][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
-							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+                            : "+a" (pa), "+a" (pa_)
+                            : "m"(*(const float (*)[]) pa ) );
 
 				//	2,0
 				pa= &(A [y*2+2][x*2  ][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
-							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+                            : "+a" (pa), "+a" (pa_)
+                            : "m"(*(const float (*)[]) pa ) );
 				//	2,1
 				pa= &(A [y*2+2][x*2+1][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
-							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+                            : "+a" (pa), "+a" (pa_)
+                            : "m"(*(const float (*)[]) pa ) );
 				//	2,2
 				pa= &(A [y*2+2][x*2+2][z]);
 				asm ( 	"fpu 0 rep vlen vreg1= [%0++]; 			\n\t"
@@ -93,7 +93,7 @@ void max_pool_2d_a3_s2_byZ(
 
 				float* pc= &(C [y  ][x  ][z]);
 				asm ( 	"fpu 0 rep vlen [%0++]= vreg0; 			\n\t"
-							: "+a" (pc), "+a" (pa_), "=m"(*pc) );
+							: "+a" (pc), "+a" (pa_), "=m"(*(float (*)[]) pc ) );
 			}
 		}
 	}

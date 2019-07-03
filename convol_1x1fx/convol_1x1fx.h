@@ -41,7 +41,7 @@ static inline void convol_1x1fx( float* C, float* A, float* B, int XY, int Zin, 
 					"ar1= ar0 + 6;							\n\t"
 					"fpu 3 rep vlen vreg7= [ar1++gr1];		\n\t"
 					: "+m"(dummy_to_link)
-					: "RA0"( pc ), "RG1"( XY ), "m"(*pc )
+					: "RA0"( pc ), "RG1"( XY ), "m"(*(const long long (*)[])pc )
 					: "ar1" );
 			const float* pa;
 			const float* pb;
@@ -56,7 +56,7 @@ static inline void convol_1x1fx( float* C, float* A, float* B, int XY, int Zin, 
 					"fpu 2 vreg0 = fpu 1 vreg0;\n\t"
 					"fpu 3 vreg0 = fpu 2 vreg0;\n\t"
 						: "+m" (dummy_to_link), "+RA2" (pa)
-						: "RG2"(Zin), "m"(*pa) );
+						: "RG2"(Zin), "m"(*(const long long (*)[])pa) );
 			while ( true ){
 
 

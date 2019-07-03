@@ -37,7 +37,7 @@ void BatchNormalization(float *input, float *output, int sz,
 			 "fpu 1  vreg6= fpu 0  vreg6;  \n\t"
 			 "fpu 2  vreg6= fpu 1  vreg6;  \n\t"
 			 "fpu 3  vreg6= fpu 2  vreg6;  \n\t"
-							: "+a" (cfs)/*, "=g"(rMode)*/ : "m"(*bufScalar) );
+							: "+a" (cfs)/*, "=g"(rMode)*/ : "m"(*(const float (*)[6]) bufScalar) );
 
 	sz /=2;
 	while (sz>0){
@@ -77,7 +77,7 @@ void BatchNormalization(float *input, float *output, int sz,
 				"fpu 3 rep vlen vreg0= [%0++]; 			\n\t"
 					: "+a" (input)
 					: "g"(len0), "g"(len1)
-					  , "m"(*input) );
+					  , "m"(*(const long long (*)[ len1 + 3*len0 ]) input) );
 
 				//	- mean
 		asm ( 	ALL_FPU (".float vreg0 = vreg0  - .retrive(vreg5);")
@@ -94,7 +94,7 @@ void BatchNormalization(float *input, float *output, int sz,
 				"vlen = %3;                     	\n\t"
 				"fpu 3 rep vlen [%0++] = vreg0; 	\n\t"
 					: "+a" (output)
-					  , "=m"(*output)
+					  , "=m"(*(long long (*)[ len1 + 3*len0 ]) output)
 					: "g"(len0), "g"(len1)
 					  , "a" (cfs) );
 	}
