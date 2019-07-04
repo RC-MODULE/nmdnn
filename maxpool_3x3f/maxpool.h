@@ -89,7 +89,7 @@ void max_pool_2d_a3_s2_byZ(
 						"fpu 0 .float vreg0 - vreg1, set mask if <;	\n\t"
 						"fpu 0 .float vreg0= mask ? vreg1 : vreg0;	\n\t"
 							: "+a" (pa), "+a" (pa_)
-							: "m"(*pa) );
+							: "m"(*(const float (*)[]) pa ) );
 
 				float* pc= &(C [y  ][x  ][z]);
 				asm ( 	"fpu 0 rep vlen [%0++]= vreg0; 			\n\t"

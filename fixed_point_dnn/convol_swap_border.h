@@ -186,6 +186,8 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
             }
         }
     }
+    if (SHIFT==-1)
+        return;
     asm (   "sir = 0x00000000;                              \n\t"   //  nmc4
             "sbh  = sir;                               \n\t"
             "sir = %1;                              \n\t"   //  nmc4
@@ -199,9 +201,9 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
     long long  zero = 0;
     for ( z=0; z< OUT_Z; z++ ){
         asm (   "rep 1 wfifo = [%5];           \n\t"
-                "rep 1 wfifo = [%0++], ftw;           \n\t"
+                "rep 1 wfifo = [%0++], ftw, wtw;           \n\t"
                 "vr = [%1++];                                 \n\t"
-                "wtw;                                 \n\t"
+                //"wtw;                                 \n\t"
                                 : "+a"(mPtr), "+a"(aPtr), "+g"(dummy_order)
                                 : "m"(*mPtr), "m"(*aPtr), "a"(&zero), "m"(zero) );
         int xy;
@@ -226,3 +228,4 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
         }
     }
 }
+

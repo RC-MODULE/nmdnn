@@ -9,31 +9,13 @@ extern "C" int printf( const char* format,...);
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
 //	В этой версии для перемножения матриц используется nmppmMul_mm из nmpp
-#include "convol_swap_border.h"
+#include "convol_sb_dyna.h"
 //
 #define Kbits 2
 #define Jbits 64
 //
+#include "test_params.h"
 
-//
-const int Xout= 4;
-const int Yout= 4;
-const int Zin= 64;	// *4
-//
-const int Zout = 32;   // *2            //  кол-во одновременно вычисляемых ядер (J)
-const int Kx   = 3;             //  окно по горизонтали
-const int Ky   = Kx;             //  окно по вертикали
-const int Stride = 1;
-const bool Border = false;
-const int Shift = 20;   //  -1 - не делать постпроцессинг
-////const int Xin= 40;
-////const int Yin= 3;
-////const int Zin= 16;
-////
-////const int Zout = 4;            //  кол-во одновременно вычисляемых ядер (J)
-////const int Kx   = 1;             //  окно по горизонтали
-////const int Ky   = 1;             //  окно по вертикали
-//const int Ksz  = Kx * Ky;       //  размер ядра (K)
 //
 const int Xin= (Xout-1)*Stride +Kx -2*Border;
 const int Yin= (Yout-1)*Stride +Ky -2*Border;
@@ -143,9 +125,11 @@ int convol_swap_test()
 	        			}
 	                }
 				}
-	            ce = ((ce >> Shift ) * bias_mull[z]) + bias[z];
-	            if ( ce<0 )
-	                ce = 0;
+                if ( Shift != -1 ){
+                    ce = ((ce >> Shift ) * bias_mull[z]) + bias[z];
+                    if ( ce<0 )
+                        ce = 0;
+                }
 				nmppsPut< Jbits > ( ( NMVec< Jbits > )&(et_sw[z][y][0]), x, ce );
 			}
 		}
@@ -157,7 +141,8 @@ int convol_swap_test()
 	/////////////////////
 	//  MAIN CALL
     /////////////////////
-	nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preZERO, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw, bias, bias_mull );
+//    nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preZERO, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw, bias, bias_mull );
+    nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param<Kbits, Jbits, preZERO, Kx, Stride, Border, Shift >( Yin, Xin, Zin, Zout, (long long*)pic_sw, (long long*)kern_sw, (long long*)res_sw, bias, bias_mull );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
