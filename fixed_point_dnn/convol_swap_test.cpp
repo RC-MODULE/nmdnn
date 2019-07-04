@@ -9,7 +9,6 @@ extern "C" int printf( const char* format,...);
 #include "simple_wraps.h"
 ////#include "convol_fixp_alt.h"  //	В этой версии используется самописный mmul
 //	В этой версии для перемножения матриц используется nmppmMul_mm из nmpp
-const int Zout = 32;   // *2            //  кол-во одновременно вычисляемых ядер (J)
 #include "convol_swap_border.h"
 //
 #define Kbits 2
@@ -21,6 +20,7 @@ const int Xout= 4;
 const int Yout= 4;
 const int Zin= 64;	// *4
 //
+const int Zout = 32;   // *2            //  кол-во одновременно вычисляемых ядер (J)
 const int Kx   = 3;             //  окно по горизонтали
 const int Ky   = Kx;             //  окно по вертикали
 const int Stride = 1;
@@ -119,7 +119,7 @@ int convol_swap_test()
 	for ( x=0; x<Xout; x++ ){
 		for ( y=0; y<Yout; y++ ){
 			for ( z=0; z<Zout; z++ ){
-				NMValue< Jbits > ce = 0x100;
+				NMValue< Jbits > ce = 0;
 				int xx,yy,zz;
 	            for ( yy=0; yy<Ky; yy++ ){
 	                for ( xx=0; xx<Kx; xx++ ){

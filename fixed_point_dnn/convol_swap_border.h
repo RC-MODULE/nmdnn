@@ -2,8 +2,8 @@
 #include "simple_wraps.h"
 #include "nbsb_builder.h"
 
-extern long long bias[Zout];
-extern long long bias_mull[Zout];
+extern long long bias[];
+extern long long bias_mull[];
 
 static inline int max(int x, int y){  return x>y ? x:y;}
 
