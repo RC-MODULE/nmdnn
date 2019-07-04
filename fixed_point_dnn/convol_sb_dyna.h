@@ -1,90 +1,24 @@
 
-#include "simple_wraps.h"
-#include "nbsb_builder.h"
+#include "convol_swap_border.h"
 
-extern long long bias[];
-extern long long bias_mull[];
+//  Версия convol_swap_border с динамическими параметрами
 
-static inline int max(int x, int y){  return x>y ? x:y;}
-
-static inline void postID( const int rep, int& dummy_order )
-{
-}
-
-static inline void postRELU( const int rep, int& dummy_order )
-{
-    asm (   "rep %1  with not activate afifo and afifo;   "
-                            : "+g"(dummy_order)
-                            : "i"(rep) );
-}
-
-static inline void postPROC( const int rep, int& dummy_order  )
-{
-    long long* aPtr = bias;
-    long long* mPtr = bias_mull;
-    asm (   "sir = 0x00000000;                              \n\t"   //  nmc4
-            "sb  = sir;                               \n\t"
-            "rep 1 wfifo = [%1++], ftw;           \n\t"
-            "wtw;                               \n\t"
-            "rep %3 data = [%0++] with vsum , afifo, data;     \n\t"
-            "rep %3  with not activate afifo and afifo;   "
-                            : "+a"(aPtr), "+a"(mPtr), "+g"(dummy_order)
-                            : "i"(rep), "m"(*(const long long (*)[rep]) aPtr), "m"(*mPtr) );
-}
-
-static inline void preZERO( const int rep, int& dummy_order, long long* cc, const int ldc )
-{
-    asm (   "rep %1  with vfalse;   "
-                            : "+g"(dummy_order)
-                            : "i"(rep) );
-}
-
-static inline void preADD_OLD_C( const int rep, int& dummy_order, long long* cc, const int ldc )
-{
-    asm (   "rep %4 data = [%1++%2] with data;  "
-                :   "+g"(dummy_order), "+RA0" (cc)
-                : "RG0"(ldc*2), "m"(*(const long long (*)[rep*ldc]) cc), "i"(rep) );
-}
-
-static inline void preBIAS_X( long long* ptr, const int rep, int& dummy_order )
-{
-    asm (   "rep %2 data= [%1++] with data;   "
-                            : "+g"(dummy_order), "+a"(ptr)
-                            : "i"(rep), "m"(*(const long long (*)[rep]) ptr) );
-}
-
-typedef void (*PreProcessType)(const int rep, int& dummy_order, long long* cc, const int ldc);
-
-//  В этой версии используется самописный mmul
-
-//  Свёртка
-//  Параметры шаблона:
-//  Kbits: сколько битов на число в матрице А
-//  Jbits: сколько битов на число в матрице B, C
-//  KERN_SZ: размер окна (у нас 3)
 template <  int Kbits,
             int Jbits,
             PreProcessType Prefunc,
             int KERN_SZ,
-            int PIC_Y,
-            int PIC_X,
-            int PIC_Z,
-            int OUT_Z,
             int STRIDE,
             bool PAD,
             int SHIFT>
 __attribute__ ((section(".text_int_X")))
-void nmppDnn_Convolution_Fixp_Swap_Border (
-        long long pSrc      []
-                              [ PIC_Y ]
-                                [ PIC_X /(64/Jbits) ],    //  вход
-        long long pKernel   []
-                              [KERN_SZ]
-                                [KERN_SZ]
-                                  [ 1+ (PIC_Z-1) /(64/Kbits) ],// вход
-        long long pDstC     []
-                              [ PAD ? PIC_Y : (PIC_Y - KERN_SZ)/STRIDE +1 ]
-                                [ (PAD ? PIC_X : (PIC_X - KERN_SZ)/STRIDE +1) /(64/Jbits) ],   //  выход
+void nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param (
+        const int PIC_Y,
+        const int PIC_X,
+        const int PIC_Z,
+        const int OUT_Z,
+        long long* pSrc,    //  вход
+        long long* pKernel,// вход
+        long long* pDstC,   //  выход
         long long *bias,
         long long *bias_mull
          )
@@ -141,7 +75,7 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
     //  CONVOLUTION
     int y;
     for ( y=0; y< OUT_Y; y++ ){
-        NMVec<Jbits> nmC=   (NMVec<Jbits>)  &pDstC [0] [y] [0];
+        NMVec<Jbits> nmC=   (NMVec<Jbits>)  &pDstC [ y*OUT_X ];
         int i,    k;
         int ii,jj,kk;
 
@@ -156,20 +90,20 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
                 int ky,kx;
                 for (   ky= max(0,BORDER-y);   ky< KERN_SZ - max(0, y+1-OUT_Y+BORDER);    ky++ ){
                     for ( kx=max(0,BORDER-jj); kx<KERN_SZ - max(0, jj+1-OUT_X+BORDER); kx++ ){
-                        NMVec<Kbits> nmA=   (NMVec<Kbits>)  &pKernel [0] [ky] [kx] [0];
-                        NMVec<Jbits> nmB=   (NMVec<Jbits>)  &pSrc [0] [y*STRIDE+ky-BORDER] [kx-BORDER ];
+                        NMVec<Kbits> nmA=   (NMVec<Kbits>)  &pKernel [ (ky *KERN_SZ +kx )*KK ];
+                        NMVec<Jbits> nmB=   (NMVec<Jbits>)  &pSrc [ PIC_X*(y*STRIDE+ky-BORDER) + kx-BORDER ];
 
                         for (kk=0 ; kk<KK; kk++ ){  //  IN_Z
                             k= kk* KStep;
 
                             long long* bb = &(((long long*)nmB)[k*ldb +jj*STRIDE]);
 
-                            asm (   "rep %3 wfifo = [%0++%2], ftw;      "
+                            asm (   "rep %3 wfifo = [%0++%2], ftw,wtw;      "
                                         : "+RA1" (bb),   "+g"(dummy_order)
                                         : "RG1"(ldb*2), "i"(KStep), "m"(*(const long long (*)[KStep*ldb]) bb) );
 
                             long long* aa = &(((long long*)nmA)[i*lda +kk]);
-                            asm (   "wtw;                               \n\t"
+                            asm (   //"wtw;                               \n\t"
                                     "rep %4 data = [%0++%2] with vsum , data, afifo;    "
                                         : "+RA2" (aa),   "+g"(dummy_order)
                                         : "RG2"(lda*2), "m"(*(const long long (*)[IStep*lda]) aa), "i"(IStep) );
@@ -188,6 +122,7 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
     }
     if (SHIFT==-1)
         return;
+
     asm (   "sir = 0x00000000;                              \n\t"   //  nmc4
             "sbh  = sir;                               \n\t"
             "sir = %1;                              \n\t"   //  nmc4
@@ -201,9 +136,9 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
     long long  zero = 0;
     for ( z=0; z< OUT_Z; z++ ){
         asm (   "rep 1 wfifo = [%5];           \n\t"
-                "rep 1 wfifo = [%0++], ftw, wtw;           \n\t"
+                "rep 1 wfifo = [%0++], ftw;           \n\t"
                 "vr = [%1++];                                 \n\t"
-                //"wtw;                                 \n\t"
+                "wtw;                                 \n\t"
                                 : "+a"(mPtr), "+a"(aPtr), "+g"(dummy_order)
                                 : "m"(*mPtr), "m"(*aPtr), "a"(&zero), "m"(zero) );
         int xy;
