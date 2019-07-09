@@ -25,3 +25,7 @@ int main()
 	return convol_swap_test();
 }
 
+int hide(int x)
+{
+    return x;
+}

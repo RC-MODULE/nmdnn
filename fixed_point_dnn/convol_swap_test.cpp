@@ -16,6 +16,8 @@ extern "C" int printf( const char* format,...);
 //
 #include "test_params.h"
 
+int hide(int x);
+
 //
 const int Xin= (Xout-1)*Stride +Kx -2*Border;
 const int Yin= (Yout-1)*Stride +Ky -2*Border;
@@ -142,7 +144,7 @@ int convol_swap_test()
 	//  MAIN CALL
     /////////////////////
 //    nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preZERO, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw, bias, bias_mull );
-    nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param<Kbits, Jbits, preZERO, Kx, Stride, Border, Shift >( Yin, Xin, Zin, Zout, (long long*)pic_sw, (long long*)kern_sw, (long long*)res_sw, bias, bias_mull );
+    nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param<Kbits, Jbits, preZERO, Kx, Stride, Border, Shift >( (Yin), (Xin), (Zin), (Zout), (long long*)pic_sw, (long long*)kern_sw, (long long*)res_sw, bias, bias_mull );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 

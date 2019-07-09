@@ -3,6 +3,19 @@
 
 //  ¬ерси€ convol_swap_border с динамическими параметрами
 
+static inline __attribute__((always_inline)) void
+        postProcDyna( const int rep, int& dummy_order, long long* &cc )
+{
+    long long* cc2 = cc;
+    asm (   "rep %3 data = [%0++] with vsum , data, vr;     \n\t"
+            "rep %3  with not activate afifo and afifo;   "
+                            : "+a"(cc), "+g"(dummy_order)
+                            : "m"(*(const long long (*)[]) cc), "i"( rep ) );
+    asm (   "rep %3 [%0++] = afifo;     \n\t"
+                            : "+a"(cc2), "+g"(dummy_order), "=m"(*( long long (*)[]) cc2)
+                            : "i"( rep ) );
+}
+
 template <  int Kbits,
             int Jbits,
             PreProcessType Prefunc,
@@ -58,7 +71,10 @@ void nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param (
 
 
     //  ((OUT_Z ^ (OUT_Z-1)) +1)/2 - максимальна€ степень двойки, на которую делитс€ OUT_Z
-    const int IStep = OUT_Z % 32 == 0 ? 32 : ((OUT_Z ^ (OUT_Z-1)) +1)/2;
+    //const int IStep = OUT_Z % 32 == 0 ? 32 : ((OUT_Z ^ (OUT_Z-1)) +1)/2;
+    assert( OUT_Z % 32 == 0 );
+
+    const int IStep = 32;
     const int II = I/IStep;
     const int JStep = 64/Jbits;
     const int JJ = J/JStep;
@@ -143,23 +159,24 @@ void nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param (
                                 : "m"(*mPtr), "m"(*aPtr), "a"(&zero), "m"(zero) );
         int xy;
         long long* cc = &(((long long*)pDstC)[z*ldc]);
-        long long* cc2 = cc;
+
         for ( xy=0; xy< ldc-31; xy+=32 ){
-            asm (   "rep 32 data = [%0++] with vsum , data, vr;     \n\t"
-                    "rep 32  with not activate afifo and afifo;   "
-                                    : "+a"(cc), "+g"(dummy_order)
-                                    : "m"(*(const long long (*)[32]) cc) );
-            asm (   "rep 32 [%0++] = afifo;     \n\t"
-                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*( long long (*)[32]) cc2) );
+            postProcDyna( 32, dummy_order, cc );
         }
-        if ( ldc % 32 !=0 ){
-            asm (   "rep %3 data = [%0++] with vsum , data, vr;     \n\t"
-                    "rep %3  with not activate afifo and afifo;   "
-                                    : "+a"(cc), "+g"(dummy_order)
-                                    : "m"(*(const long long (*)[ldc % 32]) cc), "i"(ldc % 32) );
-            asm (   "rep %3 [%0++] = afifo;     \n\t"
-                                    : "+a"(cc2), "+g"(dummy_order), "=m"(*( long long (*)[ldc % 32]) cc2)
-                                    : "i"(ldc % 32));
+        if ( (ldc % 32) & 16 ){
+            postProcDyna( 16, dummy_order, cc );
+        }
+        if ( (ldc % 32) & 8 ){
+            postProcDyna( 8, dummy_order, cc );
+        }
+        if ( (ldc % 32) & 4 ){
+            postProcDyna( 4, dummy_order, cc );
+        }
+        if ( (ldc % 32) & 2 ){
+            postProcDyna( 2, dummy_order, cc );
+        }
+        if ( (ldc % 32) & 1 ){
+            postProcDyna( 1, dummy_order, cc );
         }
     }
 }

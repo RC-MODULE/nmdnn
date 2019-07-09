@@ -32,7 +32,8 @@ static inline void postPROC( const int rep, int& dummy_order  )
                             : "i"(rep), "m"(*(const long long (*)[rep]) aPtr), "m"(*mPtr) );
 }
 
-static inline void preZERO( const int rep, int& dummy_order, long long* cc, const int ldc )
+static inline __attribute__((always_inline)) void
+        preZERO( const int rep, int& dummy_order, long long* cc, const int ldc )
 {
     asm (   "rep %1  with vfalse;   "
                             : "+g"(dummy_order)
