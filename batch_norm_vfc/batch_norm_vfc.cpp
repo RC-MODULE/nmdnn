@@ -54,6 +54,7 @@ void BatchNormalization(float *input, float *output, int sz,
 			len = (sz+1)/4;
 			len0 = len-1;
 			len1 = sz - len*3 -1;
+            sz = 0;     //  bugfix!
 		}
 		else if ( sz<=32*4 ){
 			len = (sz+3)/4;

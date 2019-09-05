@@ -25,6 +25,13 @@ const int Yin= (Yout-1)*Stride +Ky -2*Border;
 const int ZZin  = 1+ (Zin-1) /(64/Kbits);   //  округление вверх
 //const int ZZout = Zout/(64/Jbits);
 //
+//long long pic_sw [Zin] [Yin ] [Xin ];
+//long long kern_sw[Zout] [Ky] [Kx] [ZZin];
+//const long long dog = 0x6ABc6ABc6ABc6ABcull;
+//static long long guard1[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
+//long long res_sw [Zout] [Yout ] [Xout];
+//static long long guard2[8] = { dog, dog, dog, dog, dog, dog, dog, dog };
+
 __attribute__ ((section(".data_imu1"))) long long pic_sw [Zin] [Yin ] [Xin ];
 __attribute__ ((section(".data_imu2"))) long long kern_sw[Zout] [Ky] [Kx] [ZZin];
 const long long dog = 0x6ABc6ABc6ABc6ABcull;
@@ -138,7 +145,7 @@ int convol_swap_test()
 	}
 
 	int t1, t2;
-	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
+	asm("%0 = [0x40000804];"	: "=r"(t1) ); // clock
 
 	/////////////////////
 	//  MAIN CALL
@@ -146,7 +153,7 @@ int convol_swap_test()
 //    nmppDnn_Convolution_Fixp_Swap_Border<Kbits, Jbits, preZERO, Kx, Yin, Xin, Zin, Zout, Stride, Border, Shift >( pic_sw, kern_sw, res_sw, bias, bias_mull );
     nmppDnn_Convolution_Fixp_Swap_Border_Dyn_Param<Kbits, Jbits, preZERO, Kx, Stride, Border, Shift >( (Yin), (Xin), (Zin), (Zout), (long long*)pic_sw, (long long*)kern_sw, (long long*)res_sw, bias, bias_mull );
 
-	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
+	asm("%0 = [0x40000804];" : "=r"(t2) : "r"(t1) ); // clock
 
     for ( z=0; z<8; z++ ){
     	if ( guard1[z]!=dog )

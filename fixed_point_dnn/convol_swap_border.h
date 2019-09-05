@@ -206,7 +206,7 @@ void nmppDnn_Convolution_Fixp_Swap_Border (
                 "vr = [%1++];                                 \n\t"
                 //"wtw;                                 \n\t"
                                 : "+a"(mPtr), "+a"(aPtr), "+g"(dummy_order)
-                                : "m"(*mPtr), "m"(*aPtr), "a"(&zero), "m"(zero) );
+                                : "m"(*mPtr), "m"(*aPtr), "m"(zero) );
         int xy;
         long long* cc = &(((long long*)pDstC)[z*ldc]);
         long long* cc2 = cc;

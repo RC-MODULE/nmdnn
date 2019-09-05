@@ -5,6 +5,7 @@
 #define min(x,y) ((x)>(y) ? (y):(x))
 
 #include "maxpool_fixp_plain.h"
+#include  "avpool_fixp_plain.h"
 #include "simple_wraps.h"
 
 
@@ -26,6 +27,7 @@ const int Str_y = Str_x;
 const int Cx = (Ax-Kx)/Str_x +1;	//	Вычисляется:	Выходная геометрия x,y
 const int Cy = (Ay-Ky)/Str_y +1;
 
+const int is_average = 0;
 
 const long long dog = 0x6ABc6ABc6ABc6ABcull;
 __attribute__ ((section(".data_imu0"))) long long _AAAA[  ZZ  *Ay  *Ax  ];
@@ -75,7 +77,14 @@ int maxpool_test2()
                 for ( ky=0; ky<Ky; ky++ ){
                     int kx;
                     for ( kx=0; kx<Kx; kx++ ){
-                        CCCC2[z][y][x]= max( CCCC2[z][y][x], AAAA[z][y*Str_y+ky][x*Str_x+kx] );
+                        if ( kx==0 && ky==0 )
+                            CCCC2[z][y][x]= AAAA[z][y*Str_y+ky][x*Str_x+kx];
+                        else{
+                            if ( is_average )
+                                CCCC2[z][y][x]=      CCCC2[z][y][x]+ AAAA[z][y*Str_y+ky][x*Str_x+kx]  ;
+                            else
+                                CCCC2[z][y][x]= max( CCCC2[z][y][x], AAAA[z][y*Str_y+ky][x*Str_x+kx] );
+                        }
                     }
                 }
             }
@@ -85,7 +94,10 @@ int maxpool_test2()
 	int  t1, t2;
 	asm("%0 = [40000804h];"	: "=r"(t1) ); // clock
 
-	nmppDnn_MaxPool_Fixp_plain<Ky, Str_x, Z> ( _AAAA, _CCCC, Ax, Ay );
+	if ( is_average )
+	    nmppDnn_AvPool_Fixp_plain<Ky, Str_x, Z> ( _AAAA, _CCCC, Ax, Ay );
+	else
+        nmppDnn_MaxPool_Fixp_plain<Ky, Str_x, Z> ( _AAAA, _CCCC, Ax, Ay );
 
 	asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
