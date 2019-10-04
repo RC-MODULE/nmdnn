@@ -3,14 +3,14 @@
 
 extern "C" {
 
-const int Ax = 300;
+const int Ax = 100;
 const int Ay = 20;
-const int Cx = 128;
+const int Cx = 100;
 const int Cy = 4;
 
 const bool isMax = false;
 
-const int Str_x = 2;
+const int Str_x = 1;
 const int Str_y = Str_x;
 
 const int W_x = 3;
@@ -28,6 +28,8 @@ void max_pool_2_2( int ldAy, float* A, int ldC, float* C, int C_count );
 void max_pool_2_1( int ldAy, float* A, int ldC, float* C, int C_count );
 //    area 3x3 stride 2x2 average pooling
 void ave_pool_3_2( int ldAy, float* A, int ldC, float* C, int C_count );
+//    area 3x3 stride 1x1 average pooling
+void ave_pool_3_1( int ldAy, float* A, int ldC, float* C, int C_count );
 
 int main()
 {
@@ -42,7 +44,7 @@ int main()
     int rn=12345;
     for ( x=0; x<Ax; x++ ){
         for ( y=0; y<Ay; y++ ){
-            A[y][x] = 1 << (rn % 10);
+            A[y][x] = ( (1<<(y+8)) +(1<<x) ) % 11073; //1 << (rn % 10);
             rn = (rn * 34567) ^ (rn >> 16);
         }
     }
@@ -63,8 +65,12 @@ int main()
             else if ( W_x==3 )
                 max_pool_3_2( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
         }
-        else
-            ave_pool_3_2( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
+        else{
+            if ( Str_x==2 )
+                ave_pool_3_2( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
+            else
+                ave_pool_3_1( Ax, &A[yy*Str_y][0], 2, &C2[yy][0], Cx);
+        }
     }
     asm("%0 = [40000804h];" : "=r"(t2) : "r"(t1) ); // clock
 
@@ -81,28 +87,46 @@ int main()
                         mp = mp + a;
                 }
             }
-            mp /= 9;
+            if ( !isMax )
+                mp /= ( W_x * W_y );
         }
     }
 
-    printf("============================\n:");
-    int* CC = (int*) 0x20200000;
-    int* CC2 = (int*) 0x20300000;
-    for ( x=0; x<Cx; x++ ){
+    printf("=================--===========\n:");
+//    int* CC = (int*) 0x20200000;
+//    int* CC2 = (int*) 0x20300000;
+//    for ( x=0; x<Cx; x++ ){
+//        for ( y=0; y<Cy; y++ ){
+//            int d = &(C[y][x]) - &(C[0][0]);
+//            CC[d] = C[y][x];
+//            CC2[d] = C2[y][x];
+//        }
+//    }
         for ( y=0; y<Cy; y++ ){
-            int d = &(C[y][x]) - &(C[0][0]);
-            CC[d] = C[y][x];
-            CC2[d] = C2[y][x];
+            for ( x=0; x<Cx; x++ ){
+                if ( x<4 && y<4 ){
+                    if (x==0)
+                        printf ("\n: %6x", (int)A[y][x] );
+                    else
+                        printf (" %6x ", (int)A[y][x] );
+                }
+            }
+            printf ("      +      " );
+            for ( x=0; x<Cx; x++ ){
+                if ( x<4 && y<4 ){
+                    printf (" %6x ", (int)C2[y][x] );
+                }
+            }
         }
-    }
-    for ( x=0; x<Cx; x++ ){
+    for ( x=0; x<Cx-2; x++ ){
         for ( y=0; y<Cy; y++ ){
             if ( C[y][x] != C2[y][x] ){
-                printf ("E: %x R: %x     x %d y %d\n", (int)C2[y][x], (int)C[y][x], x, y);
+                printf ("\n:E: %x R: %x     x %d y %d\n", (int)C[y][x], (int)C2[y][x], x, y);
                 return C2[y][x];
             }
         }
     }
+    printf ("\n:E: %x R: %x GOOD \n", (int)C2[0][0], (int)C[0][0] );
 
     return t2-t1;
 
